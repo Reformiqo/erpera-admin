@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ERPERA Admin">
+  <rect width="64" height="64" rx="14" fill="#2490EF"/>
+  <g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 42V28"/>
+    <path d="M27 42V20"/>
+    <path d="M38 42V33"/>
+    <path d="M49 42V24"/>
+  </g>
+</svg>

@@ -1,0 +1,190 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "section_model",
+  "active_provider",
+  "active_model",
+  "column_break_m",
+  "fallback_provider",
+  "fallback_model",
+  "section_dist",
+  "allow_site_override",
+  "share_keys",
+  "config_html",
+  "section_log",
+  "log_calls",
+  "log_content",
+  "content_retention_days",
+  "section_ingest",
+  "ingest_enabled",
+  "keep_records_days",
+  "section_selfserve",
+  "portal_signup_enabled",
+  "trial_days",
+  "column_break_ss",
+  "max_sites_per_account",
+  "default_seats"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_model",
+   "fieldtype": "Section Break",
+   "label": "Model every site uses"
+  },
+  {
+   "fieldname": "active_provider",
+   "fieldtype": "Link",
+   "options": "AI Provider Credential",
+   "label": "Provider",
+   "description": "Groq, Anthropic, or whichever credential you want every site to answer with."
+  },
+  {
+   "fieldname": "active_model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "description": "Blank falls back to the credential's own default model."
+  },
+  {
+   "fieldname": "column_break_m",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fallback_provider",
+   "fieldtype": "Link",
+   "options": "AI Provider Credential",
+   "label": "Fallback Provider",
+   "description": "Answers when the first one is rate limited or down."
+  },
+  {
+   "fieldname": "fallback_model",
+   "fieldtype": "Data",
+   "label": "Fallback Model"
+  },
+  {
+   "fieldname": "section_dist",
+   "fieldtype": "Section Break",
+   "label": "Distribution"
+  },
+  {
+   "fieldname": "allow_site_override",
+   "fieldtype": "Check",
+   "label": "Let a site override the model",
+   "default": "0",
+   "description": "Off means the choice here wins everywhere, which is the point of setting it here."
+  },
+  {
+   "fieldname": "share_keys",
+   "fieldtype": "Check",
+   "label": "Send the API key to sites",
+   "default": "0",
+   "description": "Off means each site keeps its own key and only the provider and model come from here. Turn on only for sites you operate."
+  },
+  {
+   "fieldname": "config_html",
+   "fieldtype": "HTML",
+   "label": "Current"
+  },
+  {
+   "fieldname": "section_log",
+   "fieldtype": "Section Break",
+   "label": "What sites should record"
+  },
+  {
+   "fieldname": "log_calls",
+   "fieldtype": "Check",
+   "label": "Record every call",
+   "default": "1"
+  },
+  {
+   "fieldname": "log_content",
+   "fieldtype": "Check",
+   "label": "Record prompts and responses",
+   "default": "0",
+   "description": "Prompts and responses are the client's own business data. Off by default."
+  },
+  {
+   "fieldname": "content_retention_days",
+   "fieldtype": "Int",
+   "label": "Delete content after (days)",
+   "default": "30"
+  },
+  {
+   "fieldname": "section_ingest",
+   "fieldtype": "Section Break",
+   "label": "Here"
+  },
+  {
+   "fieldname": "ingest_enabled",
+   "fieldtype": "Check",
+   "label": "Accept call batches",
+   "default": "1"
+  },
+  {
+   "fieldname": "keep_records_days",
+   "fieldtype": "Int",
+   "label": "Keep call records for (days)",
+   "default": "0",
+   "description": "0 keeps them forever. Tokens and cost are what billing runs on."
+  },
+  {
+   "fieldname": "section_selfserve",
+   "fieldtype": "Section Break",
+   "label": "Self-serve sign-up"
+  },
+  {
+   "fieldname": "portal_signup_enabled",
+   "fieldtype": "Check",
+   "label": "Let customers sign up themselves",
+   "default": "1",
+   "description": "Turns the /account portal on. With this off, keys can only be issued here by hand."
+  },
+  {
+   "fieldname": "trial_days",
+   "fieldtype": "Int",
+   "label": "Trial length (days)",
+   "default": "15"
+  },
+  {
+   "fieldname": "column_break_ss",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_sites_per_account",
+   "fieldtype": "Int",
+   "label": "Sites one account may register",
+   "default": "3",
+   "description": "A cap, so one sign-up cannot mint trial keys in a loop."
+  },
+  {
+   "fieldname": "default_seats",
+   "fieldtype": "Int",
+   "label": "Seats a trial starts with",
+   "default": "5"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPERA Admin",
+ "name": "ERPERA AI Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

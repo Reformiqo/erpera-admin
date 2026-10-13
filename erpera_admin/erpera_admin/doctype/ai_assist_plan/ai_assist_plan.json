@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:plan_name",
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_name",
+  "tagline",
+  "is_active",
+  "column_break_p1",
+  "sort_order",
+  "highlight",
+  "section_price",
+  "price_per_seat",
+  "currency",
+  "period",
+  "column_break_p2",
+  "gst_percent",
+  "payment_url",
+  "section_incl",
+  "includes"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tagline",
+   "fieldtype": "Data",
+   "label": "Tagline",
+   "description": "One line under the name, e.g. \"Everything, for every user\"."
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Show on the customer portal",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_p1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Order",
+   "description": "Lower comes first."
+  },
+  {
+   "fieldname": "highlight",
+   "fieldtype": "Check",
+   "label": "Mark as recommended"
+  },
+  {
+   "fieldname": "section_price",
+   "fieldtype": "Section Break",
+   "label": "Price"
+  },
+  {
+   "fieldname": "price_per_seat",
+   "fieldtype": "Currency",
+   "label": "Price per seat",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "default": "INR",
+   "length": 3
+  },
+  {
+   "fieldname": "period",
+   "fieldtype": "Select",
+   "label": "Per",
+   "options": "Year\nMonth",
+   "default": "Year",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_p2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gst_percent",
+   "fieldtype": "Percent",
+   "label": "GST",
+   "default": "18"
+  },
+  {
+   "fieldname": "payment_url",
+   "fieldtype": "Data",
+   "label": "Checkout link",
+   "description": "Where Pay sends them \u2014 a Zoho hosted page or a payment link. Blank hides the button and offers an email instead."
+  },
+  {
+   "fieldname": "section_incl",
+   "fieldtype": "Section Break",
+   "label": "What is in it"
+  },
+  {
+   "fieldname": "includes",
+   "fieldtype": "Small Text",
+   "label": "Included",
+   "description": "One line each. Shown as a ticked list on the portal."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPERA Admin",
+ "name": "AI Assist Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

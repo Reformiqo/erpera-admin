@@ -1,0 +1,189 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "account",
+  "site",
+  "column_break_y1",
+  "plan",
+  "seats",
+  "status",
+  "section_amt",
+  "paid_on",
+  "period_start",
+  "period_end",
+  "column_break_y2",
+  "amount",
+  "tax",
+  "total",
+  "currency",
+  "section_ref",
+  "invoice_no",
+  "invoice_url",
+  "method",
+  "reference",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "AIA-PAY-.YYYY.-",
+   "default": "AIA-PAY-.YYYY.-",
+   "hidden": 1
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1,
+   "in_list_view": 1,
+   "description": "The portal account this payment belongs to. They see it on their billing page."
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Managed Site",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_y1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "AI Assist Plan"
+  },
+  {
+   "fieldname": "seats",
+   "fieldtype": "Int",
+   "label": "Seats"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Paid\nPending\nFailed\nRefunded",
+   "default": "Paid",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_amt",
+   "fieldtype": "Section Break",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "paid_on",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Covers from"
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Covers to"
+  },
+  {
+   "fieldname": "column_break_y2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "options": "currency"
+  },
+  {
+   "fieldname": "tax",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "options": "currency"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "options": "currency",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "default": "INR",
+   "length": 3
+  },
+  {
+   "fieldname": "section_ref",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "invoice_no",
+   "fieldtype": "Data",
+   "label": "Invoice No"
+  },
+  {
+   "fieldname": "invoice_url",
+   "fieldtype": "Data",
+   "label": "Invoice link",
+   "description": "Where the customer can read or download it. Blank shows no link."
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Data",
+   "label": "Paid by",
+   "description": "e.g. UPI, NEFT, Card"
+  },
+  {
+   "fieldname": "reference",
+   "fieldtype": "Data",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes",
+   "description": "For us. The customer never sees this."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPERA Admin",
+ "name": "AI Assist Payment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "paid_on",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
