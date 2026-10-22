@@ -20,6 +20,12 @@
   "signed_up_on",
   "section_auth",
   "token",
+  "section_erp",
+  "erp_credentials",
+  "erp_status",
+  "column_break_erp",
+  "erp_last_probe",
+  "erp_probe_error",
   "section_notes",
   "notes",
   "section_licence",
@@ -104,6 +110,43 @@
    "fieldtype": "Password",
    "label": "API Key",
    "description": "The key the customer pastes into AI Assist Settings on their own site. Every model call is checked against it."
+  },
+  {
+   "fieldname": "section_erp",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Connection",
+   "description": "The keys we use to read and write on this customer's own site. One row per user, so a question is answered with that person's permissions. The row with no user is the site default."
+  },
+  {
+   "fieldname": "erp_credentials",
+   "fieldtype": "Table",
+   "label": "Credentials",
+   "options": "ERPERA Site Credential"
+  },
+  {
+   "fieldname": "erp_status",
+   "fieldtype": "Select",
+   "label": "Connection",
+   "options": "Not connected\nConnected\nRejected\nUnreachable",
+   "default": "Not connected",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_erp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "erp_last_probe",
+   "fieldtype": "Datetime",
+   "label": "Last Checked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erp_probe_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error",
+   "read_only": 1
   },
   {
    "fieldname": "section_notes",

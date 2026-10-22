@@ -354,3 +354,240 @@ def see(site=None, token=None, image=None, prompt=None, max_tokens=2048, context
 
 	return relay_mod.vision(site_name, image_data_url=image, prompt=prompt,
 	                        max_tokens=max_tokens, context=context)
+
+
+# ------------------------------------------------------- the brain's own edge
+
+def _parsed(value):
+	"""A tenant posts JSON strings; Frappe hands them over untouched."""
+	if isinstance(value, str):
+		try:
+			return json.loads(value)
+		except ValueError:
+			return None
+	return value
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def connect_erp(site=None, token=None, base_url=None, api_key=None, api_secret=None):
+	"""Take a site's ERPNext credentials and prove they work.
+
+	This is the moment the product inverts. Until now their site called us; from
+	here we call theirs, which is what lets the reasoning live on this side. The
+	key is checked before it is trusted, because a key that silently does not
+	work turns every later question into a mystery.
+	"""
+	from erpera_admin import erp
+
+	site_name = _authenticate(site, token)
+	if not (base_url and api_key and api_secret):
+		frappe.local.response["http_status_code"] = 400
+		return {"ok": False, "error": _("Site address, API key and API secret are all required.")}
+
+	doc = frappe.get_doc("Managed Site", site_name)
+	doc.base_url = (base_url or "").strip().rstrip("/")
+	doc.flags.ignore_permissions = True
+	doc.save(ignore_permissions=True)
+	erp.store_credential(site_name, api_key, api_secret, user=None, label="Site default")
+	frappe.db.commit()
+
+	try:
+		who = erp.Site(site_name).whoami()
+	except Exception as e:
+		# The address they typed stays on the record even when it failed, so the
+		# setup page can show them what did not work instead of silently reverting.
+		frappe.db.set_value("Managed Site", site_name, {
+			"erp_status": "Unreachable" if isinstance(e, erp.ErpUnreachable) else "Rejected",
+			"erp_last_probe": now_datetime(),
+			"erp_probe_error": str(e)[:500],
+		}, update_modified=False)
+		frappe.db.commit()
+		frappe.local.response["http_status_code"] = 400
+		return {"ok": False, "error": str(e)[:400]}
+
+	frappe.db.set_value("Managed Site", site_name, {
+		"erp_status": "Connected",
+		"erp_last_probe": now_datetime(),
+		"erp_probe_error": None,
+	}, update_modified=False)
+	frappe.db.commit()
+	return {"ok": True, "acting_as": who}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def register_key(site=None, token=None, user=None, api_key=None, api_secret=None):
+	"""Store one person's key, so their questions carry their permissions.
+
+	The site token already proves the caller is that site's server, and that
+	server's Administrator can read any of its users' secrets anyway, so this
+	adds no exposure the customer did not already have. What it buys is that a
+	question asked by a storekeeper is answered with a storekeeper's sight.
+	"""
+	from erpera_admin import erp
+
+	site_name = _authenticate(site, token)
+	user = (user or "").strip()
+	if not (user and api_key and api_secret):
+		frappe.local.response["http_status_code"] = 400
+		return {"ok": False, "error": _("User, API key and API secret are all required.")}
+
+	erp.store_credential(site_name, api_key, api_secret, user=user, label=user)
+	frappe.db.commit()
+	try:
+		who = erp.Site(site_name, user=user).whoami()
+	except Exception as e:
+		frappe.db.commit()
+		frappe.local.response["http_status_code"] = 400
+		return {"ok": False, "error": str(e)[:400]}
+	if who and who != user:
+		# A mismatch means the pair belongs to someone else: storing it would
+		# quietly answer one person's questions with another's permissions.
+		frappe.db.set_value("ERPERA Site Credential",
+		                    {"parent": site_name, "user": user}, "disabled", 1,
+		                    update_modified=False)
+		frappe.db.commit()
+		frappe.local.response["http_status_code"] = 400
+		return {"ok": False, "error": _("That key belongs to a different user.")}
+	return {"ok": True, "acting_as": who}
+
+
+@frappe.whitelist(allow_guest=True)
+def erp_state(site=None, token=None):
+	"""What the setup page needs to draw itself, and nothing else."""
+	from erpera_admin import erp
+
+	site_name = _authenticate(site, token)
+	row = frappe.db.get_value("Managed Site", site_name,
+	                          ["base_url", "erp_status", "erp_last_probe", "erp_probe_error"],
+	                          as_dict=True) or {}
+	return {
+		"ok": True,
+		"base_url": row.get("base_url"),
+		"status": row.get("erp_status") or "Not connected",
+		"last_checked": row.get("erp_last_probe"),
+		"error": row.get("erp_probe_error"),
+		"users_registered": frappe.db.count("ERPERA Site Credential", {
+			"parent": site_name, "parenttype": "Managed Site", "disabled": 0}) ,
+	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def ask(site=None, token=None, message=None, history=None, mode="desk",
+        config=None, context=None, allow_instant=0):
+	"""One whole conversational turn, reasoned here and read from there.
+
+	The tenant sends a question and who is asking. Everything that decides the
+	answer — the prompt, the tool list, the model, the loop — is on this side,
+	and the data never leaves theirs: we read it with their user's key, use it
+	to answer, and keep nothing but the usage record.
+	"""
+	from erpera_admin import erp, relay as relay_mod
+	from erpera_admin.brain import agent as brain_agent, instant
+
+	site_name = _authenticate(site, token)
+	if not relay_mod.enabled():
+		frappe.local.response["http_status_code"] = 503
+		return {"ok": False, "error": "relay disabled"}
+	if not (message or "").strip():
+		return {"ok": False, "error": _("Nothing to answer.")}
+
+	history = _parsed(history) or []
+	config = _parsed(config) or None
+	context = _parsed(context) or {}
+	context.setdefault("channel", "Desk")
+	user = (context.get("user") or "").strip() or None
+	# Their own notes from earlier sessions, which are theirs to send and ours
+	# to append rather than invent. Capped so a tenant cannot rewrite the prompt.
+	extra = (context.pop("extra_system", None) or "")[:4000] or None
+
+	try:
+		target = erp.for_user(site_name, user)
+	except erp.ErpNotConnected as e:
+		frappe.local.response["http_status_code"] = 409
+		return {"ok": False, "error": str(e), "reconnect": True}
+
+	# The free path first, when the caller says it is safe. Only the caller
+	# knows whether this is a fresh question or the middle of a thread, and on
+	# WhatsApp a one-off question mid-chat is still worth answering for nothing.
+	if cint(allow_instant):
+		ctx = brain_agent.site_context(target)
+		hit = instant.answer(target, message, company=ctx.get("company"),
+		                     number_format=ctx.get("number_format"))
+		if hit:
+			hit["ok"] = True
+			hit["acting_as"] = target.acting_as
+			return hit
+
+	out = brain_agent.run_agent(target, message, history=history, mode=mode or "desk",
+	                            extra_system=extra, config=config, context=context)
+	out["ok"] = True
+	out["acting_as"] = target.acting_as
+	return out
+
+
+def _target(site_name, context=None):
+	"""The customer's site, bound to whoever is asking, plus their conventions."""
+	from erpera_admin import erp
+	from erpera_admin.brain import agent as brain_agent
+
+	context = _parsed(context) or {}
+	user = (context.get("user") or "").strip() or None
+	target = erp.for_user(site_name, user)
+	return target, brain_agent.site_context(target)
+
+
+@frappe.whitelist(allow_guest=True)
+def quick_catalog(site=None, token=None):
+	"""The registry as the picker needs it: ids and labels, no filters.
+
+	What a query actually does stays here. A customer's screen needs to offer
+	"Outstanding Receivables"; it does not need the doctype, the filter set or
+	the ordering that makes it work.
+	"""
+	from erpera_admin.brain import queries as qq
+
+	_authenticate(site, token)
+	return {"ok": True, "queries": [
+		{"id": q["id"], "label": q["label"], "department": q["department"],
+		 "kind": q["kind"], "follow_ups": q.get("follow_ups") or []}
+		for q in qq.QUERIES.values()
+	]}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def quick_run(site=None, token=None, query_id=None, company=None,
+              extra_filters=None, order_by=None, context=None):
+	"""Run one registry query against their site and return the rendered result."""
+	from erpera_admin.brain import queries as qq
+
+	site_name = _authenticate(site, token)
+	target, ctx = _target(site_name, context)
+	res = qq.execute(target, query_id, company or ctx.get("company"),
+	                 extra_filters=_parsed(extra_filters), order_by=order_by,
+	                 number_format=ctx.get("number_format"))
+	return {"ok": True, "result": res}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def quick_ask(site=None, token=None, message=None, company=None, context=None):
+	"""Basic mode, answered without a model: the result, a choice, or a miss."""
+	from erpera_admin.brain import instant
+
+	site_name = _authenticate(site, token)
+	target, ctx = _target(site_name, context)
+	return {"ok": True, **instant.basic(target, message,
+	                                    company=company or ctx.get("company"),
+	                                    number_format=ctx.get("number_format"))}
+
+
+@frappe.whitelist(allow_guest=True)
+def dashboard(site=None, token=None, company=None, days=None, context=None):
+	"""Today's activity, or the trend behind it when days is given."""
+	from erpera_admin.brain import dashboard as dash
+
+	site_name = _authenticate(site, token)
+	target, ctx = _target(site_name, context)
+	company = company or ctx.get("company")
+	if days:
+		return {"ok": True, "trends": dash.get_dashboard_trends(target, company, cint(days))}
+	return {"ok": True, "today": dash.today_summary(target, company)}
