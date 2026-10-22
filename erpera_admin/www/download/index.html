@@ -1,0 +1,358 @@
+{% extends "templates/base.html" %}
+{#
+  Install AI Assist.
+
+  The old flow sold a key: sign up, copy a long string, paste it into a field
+  on your own site. None of that survives. A site collects its own key the
+  moment it is installed, so the only thing left to hand over is the app, and
+  that is what this page does.
+#}
+
+{% block title %}Install AI Assist{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#FFFFFF; --subtle:#F9FAFB; --surface:#FFFFFF; --surface-2:#F3F4F6;
+  --border:#E5E7EB; --border-2:#D1D5DB;
+  --text:#111827; --muted:#4B5563; --faint:#6B7280;
+  --brand:#2490EF; --brand-soft:#EFF6FF;
+  --ok:#0F7B55; --ok-soft:#ECFDF5;
+  --code-bg:#0E1117; --code-fg:#E6EDF3; --code-dim:#7D8590;
+  --btn-bg:#111827; --btn-fg:#FFFFFF;
+  --shadow:0 1px 2px rgba(16,24,40,.05);
+  --shadow-lg:0 16px 40px -12px rgba(16,24,40,.18);
+  --r:8px; --r-sm:6px;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0C0C0D; --subtle:#141416; --surface:#161618; --surface-2:#1C1C1F;
+  --border:#272729; --border-2:#37373B;
+  --text:#F2F2F3; --muted:#A1A1A6; --faint:#8A8A90;
+  --btn-bg:#F2F2F3; --btn-fg:#111112;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;margin:0;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+a{color:inherit}
+
+.topbar{border-bottom:1px solid var(--border);background:var(--surface);
+  position:sticky;top:0;z-index:20}
+.topbar-in{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{display:inline-flex;align-items:center;gap:9px;font-weight:600;
+  text-decoration:none;font-size:.9375rem}
+.glyph{width:22px;height:22px;border-radius:6px;background:var(--brand);
+  display:grid;place-items:center;flex:0 0 22px}
+.topbar-right{display:flex;align-items:center;gap:14px;font-size:.875rem}
+.who{color:var(--faint);font-size:.8125rem}
+.link{background:none;border:0;padding:0;color:var(--muted);cursor:pointer;
+  font:inherit;font-size:.875rem;text-decoration:none}
+.link:hover{color:var(--text)}
+
+.btn-x{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:.875rem;font-weight:500;padding:9px 16px;border-radius:var(--r-sm);
+  border:1px solid var(--border-2);background:var(--surface);color:var(--text);
+  text-decoration:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-x:hover{background:var(--surface-2)}
+.btn-x.pri{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}
+.btn-x.pri:hover{opacity:.9}
+.btn-x.lg{font-size:.9375rem;padding:12px 22px}
+.btn-x.sm{padding:6px 12px;font-size:.8125rem}
+.btn-x[disabled]{opacity:.55;cursor:default}
+
+main{padding:52px 0 80px}
+h1{font-size:2rem;line-height:1.2;letter-spacing:-.02em;margin:0 0 12px}
+h2{font-size:1.125rem;margin:0 0 6px;letter-spacing:-.01em}
+.lede{color:var(--muted);font-size:1.0625rem;margin:0 0 22px;max-width:56ch}
+.note{color:var(--faint);font-size:.8125rem;margin:0}
+
+.split{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:start}
+@media (max-width:860px){.split{grid-template-columns:1fr;gap:32px}}
+.panel{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);
+  box-shadow:var(--shadow)}
+.panel-in{padding:24px}
+.ticks{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:11px}
+.ticks li{display:flex;gap:10px;align-items:flex-start;font-size:.9375rem;
+  color:var(--muted)}
+.ticks svg{flex:0 0 18px;margin-top:2px;color:var(--ok)}
+.price{font-size:.9375rem;color:var(--muted);margin:0}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.8125rem;color:var(--muted);margin-bottom:5px}
+.field input{width:100%;padding:9px 11px;border:1px solid var(--border-2);
+  border-radius:var(--r-sm);background:var(--bg);color:var(--text);
+  font:inherit;font-size:.9375rem}
+.field input:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:transparent}
+
+/* steps */
+.step{display:grid;grid-template-columns:34px 1fr;gap:16px;padding:26px 0;
+  border-top:1px solid var(--border)}
+.step:first-of-type{border-top:0;padding-top:6px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--surface-2);
+  color:var(--muted);display:grid;place-items:center;font-size:.8125rem;
+  font-weight:600;font-variant-numeric:tabular-nums}
+.step-b{min-width:0}
+
+pre{margin:14px 0 0;background:var(--code-bg);color:var(--code-fg);
+  border-radius:var(--r);padding:16px 18px;overflow-x:auto;
+  font-family:var(--mono);font-size:.8125rem;line-height:1.75}
+pre .c{color:var(--code-dim)}
+.copy{position:absolute;top:10px;right:10px}
+.codewrap{position:relative}
+
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin:14px 0 0;
+  font-size:.8125rem;color:var(--faint)}
+.meta b{color:var(--muted);font-weight:500}
+.sum{font-family:var(--mono);font-size:.75rem;word-break:break-all}
+
+.code-pill{display:inline-block;font-family:var(--mono);font-size:1rem;
+  letter-spacing:.04em;background:var(--brand-soft);color:#0B4F94;
+  border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:8px 14px;
+  margin-top:4px;user-select:all}
+:root[data-theme="dark"] .code-pill{background:#11243A;color:#9EC9F5;border-color:#1E3A5F}
+
+.banner{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--border);
+  background:var(--subtle);border-radius:var(--r);padding:14px 16px;margin-bottom:26px}
+.banner .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);margin-top:7px;
+  flex:0 0 8px}
+.muted-card{border:1px dashed var(--border-2);border-radius:var(--r);
+  padding:20px;color:var(--muted);font-size:.9375rem}
+kbd{font-family:var(--mono);font-size:.75rem;background:var(--surface-2);
+  border:1px solid var(--border-2);border-bottom-width:2px;border-radius:4px;
+  padding:1px 5px}
+</style>
+{% endblock %}
+
+{% block content %}
+<nav class="topbar"><div class="wrap topbar-in">
+  <a class="logo" href="/ai-assist">
+    <span class="glyph"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v3M12 18v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M3 12h3M18 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/>
+    </svg></span>AI Assist</a>
+  <div class="topbar-right">
+    {% if signed_in %}
+      <span class="who">{{ session_user }}</span>
+      <a class="link" href="/account">Billing</a>
+      <a class="btn-x sm" href="/logout" id="signout">Sign out</a>
+    {% else %}
+      <a class="link" href="/login?redirect-to=/download">Sign in</a>
+    {% endif %}
+  </div>
+</div></nav>
+
+<main><div class="wrap">
+
+{% if not signed_in %}
+  {# ----------------------------------------------------------- not signed in #}
+  <div class="split">
+    <div>
+      <h1>Install AI&nbsp;Assist on your own site</h1>
+      <p class="lede">It runs inside your ERPNext, on your bench, against your data.
+        Create an account and the download is on the next screen.</p>
+      <ul class="ticks">
+        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
+          <span>Ask in plain language, <i>how much do my customers owe me</i>, and get the
+            Sales Invoices behind the number.</span></li>
+        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
+          <span>Works on WhatsApp too, including voice notes.</span></li>
+        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
+          <span>Nothing to paste. The site registers itself and collects its own key.</span></li>
+      </ul>
+      <p class="price"><b>&#8377;720 per user, per year.</b> {{ trial_days }} days free to
+        start. No card, nothing to cancel.</p>
+    </div>
+
+    <div class="panel"><div class="panel-in">
+      {% if signup_allowed %}
+        <h2>Create your account</h2>
+        <p class="note" style="margin-bottom:18px">Takes a minute. The download is waiting
+          on the other side.</p>
+        <form id="su-form" autocomplete="on">
+          <div class="field">
+            <label for="su-name">Your name</label>
+            <input id="su-name" name="name" type="text" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="su-email">Work email</label>
+            <input id="su-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="su-pass">Password</label>
+            <input id="su-pass" name="password" type="password" autocomplete="new-password"
+              minlength="8" required>
+          </div>
+          <button class="btn-x pri" type="submit" id="su-go" style="width:100%">Create account</button>
+        </form>
+        <p class="note" style="margin-top:14px;text-align:center">Already have one?
+          <a class="link" href="/login?redirect-to=/download">Sign in</a></p>
+      {% else %}
+        <h2>Sign-up is closed</h2>
+        <p class="note" style="margin-top:8px">We are not taking new accounts at the moment.
+          <a class="link" href="/login?redirect-to=/download">Sign in</a> if you already have one.</p>
+      {% endif %}
+    </div></div>
+  </div>
+
+{% else %}
+  {# --------------------------------------------------------------- signed in #}
+  <div id="dl-loading" class="muted-card">Fetching the current release...</div>
+  <div id="dl" hidden></div>
+{% endif %}
+
+</div></main>
+{% endblock %}
+
+{% block script %}
+<script>
+frappe.ready(function () {
+
+	function esc(s) {
+		return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+			return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+		});
+	}
+
+	function kb(n) {
+		n = Number(n) || 0;
+		if (n < 1024) return n + " B";
+		if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+		return (n / 1024 / 1024).toFixed(1) + " MB";
+	}
+
+	// ------------------------------------------------------------- sign up
+	var form = document.getElementById("su-form");
+	if (form) {
+		form.addEventListener("submit", function (e) {
+			e.preventDefault();
+			var go = document.getElementById("su-go");
+			go.disabled = true;
+			go.textContent = "Creating...";
+			frappe.call({
+				method: "erpera_admin.portal.sign_up",
+				args: {
+					full_name: document.getElementById("su-name").value,
+					email: document.getElementById("su-email").value,
+					password: document.getElementById("su-pass").value
+				},
+				callback: function () { window.location.href = "/download"; },
+				always: function () {
+					go.disabled = false;
+					go.textContent = "Create account";
+				}
+			});
+		});
+	}
+
+	// -------------------------------------------------------------- the page
+	var host = document.getElementById("dl");
+	if (!host) return;
+
+	// The commands are built from what the server says, not typed into the
+	// page, so a new release does not leave stale instructions behind.
+	function commands(r) {
+		var tgz = esc(r.filename);
+		var dir = tgz.replace(/\.tar\.gz$/, "");
+		return [
+			'<span class="c"># on the bench that runs your site</span>',
+			"cd ~/frappe-bench",
+			"",
+			'<span class="c"># unpack what you just downloaded</span>',
+			"tar xzf ~/Downloads/" + tgz,
+			"",
+			'<span class="c"># install it</span>',
+			"bench get-app ./ai_assist",
+			"bench --site <span class=\"c\">YOUR-SITE</span> install-app ai_assist",
+			"bench set-config -g ai_assist_control_url " + esc(r.control_url),
+			"bench restart"
+		].join("\n");
+	}
+
+	function render(r) {
+		var code = r.enrol_code
+			? '<p style="margin:0 0 2px">Your enrolment code:</p>' +
+			  '<div class="code-pill">' + esc(r.enrol_code) + "</div>"
+			: '<p class="note" style="margin-top:6px">No enrolment code needed. ' +
+			  "Leave that box empty.</p>";
+
+		host.innerHTML =
+			'<div class="banner"><div class="dot"></div><div>' +
+				"<b>Version " + esc(r.version) + "</b> is the current release" +
+				(r.released_on ? ", published " + esc(frappe.datetime.str_to_user(r.released_on)) : "") +
+				". <span class=\"note\">" + esc(r.trial_days) + " days free from the moment your " +
+				"site connects.</span>" +
+			"</div></div>" +
+
+			'<div class="step"><div class="num">1</div><div class="step-b">' +
+				"<h2>Download the app</h2>" +
+				'<p class="note">A single archive. Put it anywhere your bench can reach.</p>' +
+				'<p style="margin:16px 0 0">' +
+					'<a class="btn-x pri lg" id="dl-go" href="' + esc(r.url) + '">' +
+					"Download " + esc(r.filename) + "</a></p>" +
+				'<div class="meta">' +
+					"<span><b>Size</b> " + kb(r.size_bytes) + "</span>" +
+					(r.checksum
+						? '<span><b>SHA-256</b> <span class="sum">' + esc(r.checksum) + "</span></span>"
+						: "") +
+				"</div>" +
+			"</div></div>" +
+
+			'<div class="step"><div class="num">2</div><div class="step-b">' +
+				"<h2>Put it on your bench</h2>" +
+				'<p class="note">Replace <span class="sum">YOUR-SITE</span> with the site you ' +
+					"want it on.</p>" +
+				'<div class="codewrap"><button class="btn-x sm copy" id="cp">Copy</button>' +
+				"<pre id=\"cmd\">" + commands(r) + "</pre></div>" +
+			"</div></div>" +
+
+			'<div class="step"><div class="num">3</div><div class="step-b">' +
+				"<h2>Switch it on</h2>" +
+				"<p>Open your site, go to <b>AI Assist</b> in the sidebar and then " +
+					"<b>Setup &amp; Status</b>. Press <b>Connect This Site</b>.</p>" +
+				'<div style="margin-top:12px">' + code + "</div>" +
+				'<p class="note" style="margin-top:14px">That is the last of it. The site ' +
+					"registers itself and collects its own key. There is nothing to copy " +
+					"back here and no key for anyone to lose.</p>" +
+			"</div></div>";
+
+		var cp = document.getElementById("cp");
+		if (cp) {
+			cp.addEventListener("click", function () {
+				var text = document.getElementById("cmd").innerText;
+				navigator.clipboard.writeText(text).then(function () {
+					cp.textContent = "Copied";
+					setTimeout(function () { cp.textContent = "Copy"; }, 1800);
+				});
+			});
+		}
+	}
+
+	function nothing_yet(msg) {
+		host.innerHTML = '<div class="muted-card">' + esc(msg) + "</div>";
+	}
+
+	frappe.call({
+		method: "erpera_admin.portal.release",
+		callback: function (res) {
+			var r = res.message || {};
+			if (r.ok) { render(r); } else { nothing_yet(r.message || "Nothing to download yet."); }
+		},
+		error: function () {
+			nothing_yet("We could not reach the server. Please reload the page.");
+		},
+		always: function () {
+			document.getElementById("dl-loading").hidden = true;
+			host.hidden = false;
+		}
+	});
+});
+</script>
+{% endblock %}

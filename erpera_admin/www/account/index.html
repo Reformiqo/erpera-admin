@@ -260,67 +260,14 @@ footer .f-in{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
 <main><div class="wrap">
 
-{% if not signed_in %}
-  {# ----------------------------------------------------------- not signed in #}
-  <div class="split">
-    <div class="pitch">
-      <h1>Get your API&nbsp;key</h1>
-      <p class="lede">AI Assist answers questions about your own ERPNext data, inside your
-        own Desk. The key below is what switches it on.</p>
-      <ul class="ticks">
-        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
-          <span>Ask in plain language, <i>how much do my customers owe me</i>, and get the
-            Sales Invoices behind the number.</span></li>
-        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
-          <span>Works on WhatsApp too, including voice notes.</span></li>
-        <li><svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.8 3.8 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
-          <span>CoWork drafts documents for you. It never submits one on its own.</span></li>
-      </ul>
-      <p class="price"><b>₹720 per user, per year.</b> {{ trial_days }} days free to start.
-        No card, nothing to cancel.</p>
-    </div>
+{# Guests never reach this page: get_context sends them to /download. #}
 
-    <div class="panel"><div class="panel-in">
-      {% if signup_allowed %}
-        <h2 style="margin-bottom:4px">Create your account</h2>
-        <p class="note" style="margin-bottom:18px">Takes a minute. You will have a key at
-          the end of it.</p>
-        <form id="su-form" autocomplete="on">
-          <div class="field">
-            <label for="su-name">Your name</label>
-            <input id="su-name" name="name" type="text" autocomplete="name" required>
-          </div>
-          <div class="field">
-            <label for="su-email">Work email</label>
-            <input id="su-email" name="email" type="email" autocomplete="email" required>
-          </div>
-          <div class="field">
-            <label for="su-pass">Password</label>
-            <input id="su-pass" name="password" type="password" autocomplete="new-password"
-              minlength="8" required>
-            <p class="hint">At least 8 characters.</p>
-          </div>
-          <button class="btn-x pri" type="submit" id="su-go" style="width:100%">Create account</button>
-        </form>
-        <p class="note" style="margin-top:14px;text-align:center">Already have one?
-          <a class="link" href="/login?redirect-to=/account">Sign in</a></p>
-      {% else %}
-        <h2 style="margin-bottom:8px">Sign-up is closed</h2>
-        <p class="note">We are issuing keys by hand at the moment. Write to
-          <a class="link" href="mailto:hello@reformiqo.com">hello@reformiqo.com</a> and we
-          will set you up.</p>
-      {% endif %}
-    </div></div>
-  </div>
-
-{% else %}
-  {# --------------------------------------------------------------- signed in #}
   <div class="pagehead">
     <div>
       <h1 style="font-size:1.75rem">Your sites</h1>
       <p class="note" id="cap-note">&nbsp;</p>
     </div>
-    <button class="btn-x pri" id="add-site" disabled>Register a site</button>
+    <a class="btn-x pri" href="/download">Install on another site</a>
   </div>
   <div id="sites">
     <div class="panel"><div class="panel-in">
@@ -343,7 +290,6 @@ footer .f-in{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     </div>
     <div class="panel"><div class="panel-in" id="payments"></div></div>
   </div>
-{% endif %}
 
 </div></main>
 
@@ -376,31 +322,6 @@ frappe.ready(function () {
 		if (!s) return "No end date";
 		try { return frappe.datetime.str_to_user(s); } catch (e) { return s; }
 	}
-	// ------------------------------------------------------------- sign up
-	var form = document.getElementById("su-form");
-	if (form) {
-		form.addEventListener("submit", function (e) {
-			e.preventDefault();
-			var go = document.getElementById("su-go");
-			go.disabled = true;
-			go.textContent = "Creating…";
-			frappe.call({
-				method: "erpera_admin.portal.sign_up",
-				type: "POST",
-				args: {
-					full_name: document.getElementById("su-name").value,
-					email: document.getElementById("su-email").value,
-					password: document.getElementById("su-pass").value
-				},
-				callback: function () { window.location.href = "/account"; },
-				always: function () {
-					go.disabled = false;
-					go.textContent = "Create account";
-				}
-			});
-		});
-	}
-
 	if (!SIGNED_IN) return;
 
 	// There is no outgoing mail on this site yet, so a forgotten password cannot
@@ -453,36 +374,6 @@ frappe.ready(function () {
 		});
 	}
 
-	// --------------------------------------------------------- the key dialog
-	// Shown once on generation and again on an explicit reveal. Copy is the
-	// primary action because pasting it into the other site is the next thing
-	// that has to happen.
-	function show_key(site, key, fresh) {
-		var d = new frappe.ui.Dialog({
-			title: fresh ? "Your new API key" : "API key",
-			fields: [{
-				fieldtype: "HTML", fieldname: "b",
-				options:
-					'<p style="margin-bottom:10px">Paste this into <b>AI Assist Settings</b> on ' +
-					'<span style="font-family:' + "var(--mono)" + '">' + esc(site) + '</span>.</p>' +
-					'<div style="font-family:var(--mono);font-size:13px;word-break:break-all;' +
-					'background:var(--subtle);border:1px solid var(--border);border-radius:6px;' +
-					'padding:11px 12px">' + esc(key) + '</div>' +
-					(fresh
-						? '<p style="margin-top:12px;font-size:12px;color:var(--faint)">The old key ' +
-						  'stops working within the hour. Until this one is in place that site ' +
-						  'answers nothing.</p>'
-						: '')
-			}],
-			primary_action_label: "Copy",
-			primary_action: function () {
-				frappe.utils.copy_to_clipboard(key);
-				d.hide();
-			}
-		});
-		d.show();
-	}
-
 	// ------------------------------------------------------------ render
 	function card(s) {
 		var el = document.createElement("div");
@@ -517,22 +408,10 @@ frappe.ready(function () {
 				'</dl>' +
 			'</div>' +
 			'<div class="panel-in panel-sep">' +
-				'<h3 style="margin-bottom:2px">API key</h3>' +
-				'<div class="keyrow">' +
-					'<div class="keybox">••••••••••••••••••••••••••••••••</div>' +
-					'<button class="btn-x sm" data-act="reveal">Show</button>' +
-					'<button class="btn-x sm" data-act="rotate">New key</button>' +
-				'</div>' +
-				'<details class="how"><summary>How to put it in</summary>' +
-					'<ol class="steps">' +
-						'<li>On <span class="mono">' + esc(s.site_name) + '</span>, search for ' +
-							'<b>AI Assist Settings</b> in the search bar.</li>' +
-						'<li>Under <b>Licence</b>, paste the key into <b>API Key</b> and hit <kbd>Ctrl</kbd>+<kbd>S</kbd>.</li>' +
-						'<li>Open the AI Assist panel and ask it something.</li>' +
-					'</ol>' +
-					'<p class="tiny" style="margin-top:10px">Until the key is in place that site ' +
-						'answers nothing: not on the Desk, not on WhatsApp.</p>' +
-				'</details>' +
+				'<p class="tiny" style="margin:0">This site holds its own key and renews it ' +
+					'by itself. To check on it, open <b>AI Assist</b> &rsaquo; ' +
+					'<b>Setup &amp; Status</b> on <span class="mono">' + esc(s.site_name) +
+					'</span>.</p>' +
 			'</div>';
 
 		el.querySelector('[data-act="edit"]').addEventListener("click", function () {
@@ -568,35 +447,6 @@ frappe.ready(function () {
 			d.show();
 		});
 
-		el.querySelector('[data-act="reveal"]').addEventListener("click", function (e) {
-			var b = e.currentTarget;
-			b.disabled = true;
-			frappe.call({
-				method: "erpera_admin.portal.reveal_key",
-				args: { site: s.name },
-				callback: function (r) {
-					if (r.message && r.message.key) show_key(s.site_name, r.message.key, false);
-				},
-				always: function () { b.disabled = false; }
-			});
-		});
-
-		el.querySelector('[data-act="rotate"]').addEventListener("click", function () {
-			frappe.confirm(
-				"The current key stops working and <b>" + esc(s.site_name) + "</b> goes quiet " +
-				"until the new one is pasted in. Generate a new key?",
-				function () {
-					frappe.call({
-						method: "erpera_admin.portal.rotate_key",
-						type: "POST",
-						args: { site: s.name },
-						callback: function (r) {
-							if (r.message && r.message.key) show_key(s.site_name, r.message.key, true);
-						}
-					});
-				}
-			);
-		});
 		return el;
 	}
 
@@ -606,61 +456,12 @@ frappe.ready(function () {
 		el.innerHTML =
 			'<div class="empty">' +
 				'<h2>No sites yet</h2>' +
-				'<p>Tell us the address of the ERPNext site you want AI Assist on, and we will ' +
-					'generate its key straight away.</p>' +
-				'<button class="btn-x pri" data-act="first">Register your site</button>' +
+				'<p>Install AI Assist on your ERPNext site and it registers itself. It will ' +
+					'appear here on its own.</p>' +
+				'<a class="btn-x pri" href="/download">Get the app</a>' +
 			'</div>';
-		el.querySelector('[data-act="first"]').addEventListener("click", function () {
-			ask_for_site();
-		});
 		return el;
 	}
-
-	// -------------------------------------------------------- register a site
-	var DEFAULT_SEATS = 5;
-
-	function ask_for_site() {
-		var d = new frappe.ui.Dialog({
-			title: "Register a site",
-			fields: [
-				{
-					fieldtype: "Data", fieldname: "site_name", label: "Site address", reqd: 1,
-					description: "The address you open ERPNext at, e.g. acme.erpnext.com"
-				},
-				{ fieldtype: "Data", fieldname: "company_name", label: "Company" },
-				{
-					fieldtype: "Int", fieldname: "seats", label: "People who will use it",
-					default: DEFAULT_SEATS
-				},
-				{
-					fieldtype: "HTML", fieldname: "note",
-					options: '<p style="font-size:12px;color:var(--faint);margin-top:4px">' +
-						TRIAL_DAYS + ' days free. We will show you the key as soon as this is saved.</p>'
-				}
-			],
-			primary_action_label: "Generate key",
-			primary_action: function (v) {
-				d.get_primary_btn().prop("disabled", true).text("Generating…");
-				frappe.call({
-					method: "erpera_admin.portal.register_site",
-					type: "POST",
-					args: v,
-					callback: function (r) {
-						d.hide();
-						if (r.message && r.message.key) {
-							show_key(r.message.site, r.message.key, false);
-						}
-						load();
-					},
-					always: function () {
-						d.get_primary_btn().prop("disabled", false).text("Generate key");
-					}
-				});
-			}
-		});
-		d.show();
-	}
-
 
 	// ----------------------------------------------------------------- billing
 	// Prices come from AI Assist Plan on the control plane, never from here, so
@@ -776,11 +577,6 @@ frappe.ready(function () {
 				} else {
 					m.sites.forEach(function (s) { host.appendChild(card(s)); });
 				}
-
-				var add = document.getElementById("add-site");
-				add.disabled = !m.can_add;
-				DEFAULT_SEATS = m.default_seats || DEFAULT_SEATS;
-				add.onclick = function () { ask_for_site(); };
 
 				var note = document.getElementById("cap-note");
 				note.textContent = m.can_add

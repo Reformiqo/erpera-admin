@@ -1,12 +1,12 @@
 # Copyright (c) 2026, Reformiqo and contributors
 # For license information, please see license.txt
 
-"""The page a customer uses to get their own API key.
+"""What a customer's sites are doing, and what they owe.
 
-Reachable by guests on purpose: signing up is the first thing that happens
-here, so a login wall would put the door behind the door. Everything the page
-can actually do goes through erpera_admin.portal, which re-derives the caller
-from the session.
+Getting the app is /download, and so is signing up, so a guest arriving here
+is sent there rather than shown a second front door. Everything this page can
+actually do goes through erpera_admin.portal, which re-derives the caller from
+the session.
 """
 
 import frappe
@@ -17,6 +17,12 @@ no_cache = 1
 
 
 def get_context(context):
+	if frappe.session.user in ("Guest", None, ""):
+		# One door. /download signs people in and hands over the app; this page
+		# is only worth anything once there is an account behind it.
+		frappe.local.flags.redirect_location = "/download"
+		raise frappe.Redirect
+
 	context.no_header = 1
 	context.no_breadcrumbs = 1
 	context.no_sidebar = 1

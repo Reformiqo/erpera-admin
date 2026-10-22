@@ -12,6 +12,7 @@
   "column_break_y1",
   "plan",
   "seats",
+  "credits",
   "status",
   "section_amt",
   "paid_on",
@@ -87,8 +88,8 @@
    "fieldname": "paid_on",
    "fieldtype": "Date",
    "label": "Date",
-   "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "Set when the payment actually clears. A Pending order has none yet."
   },
   {
    "fieldname": "period_start",
@@ -162,6 +163,13 @@
    "fieldtype": "Small Text",
    "label": "Notes",
    "description": "For us. The customer never sees this."
+  },
+  {
+   "fieldname": "credits",
+   "fieldtype": "Float",
+   "label": "Credits",
+   "precision": "6",
+   "description": "Credits this payment bought, in rupees of provider cost."
   }
  ],
  "index_web_pages_for_search": 0,

@@ -27,7 +27,23 @@
   "valid_until",
   "column_break_lic",
   "suspended_reason",
-  "last_verified"
+  "last_verified",
+  "section_credits",
+  "on_credits",
+  "credit_balance",
+  "column_break_cred",
+  "credits_valid_upto",
+  "section_billing",
+  "billing_name",
+  "billing_gstin",
+  "billing_email",
+  "column_break_bill",
+  "billing_address_line1",
+  "billing_address_line2",
+  "billing_city",
+  "billing_state",
+  "billing_pincode",
+  "billing_country"
  ],
  "fields": [
   {
@@ -163,6 +179,97 @@
    "fieldtype": "Datetime",
    "label": "Signed Up On",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_credits",
+   "fieldtype": "Section Break",
+   "label": "Credits"
+  },
+  {
+   "fieldname": "credit_balance",
+   "fieldtype": "Float",
+   "label": "Credit Balance",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Rupees of provider cost left to spend. Cached from AI Credit Ledger.",
+   "precision": "6"
+  },
+  {
+   "fieldname": "column_break_cred",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "credits_valid_upto",
+   "fieldtype": "Date",
+   "label": "Credits Valid Upto",
+   "read_only": 1,
+   "description": "The whole balance expires on this date. A new purchase pushes it out."
+  },
+  {
+   "fieldname": "on_credits",
+   "fieldtype": "Check",
+   "label": "On Credits",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "This customer pays per call from a credit balance. Off means seats, and the balance below is ignored."
+  },
+  {
+   "fieldname": "section_billing",
+   "fieldtype": "Section Break",
+   "label": "Billing Details"
+  },
+  {
+   "fieldname": "billing_name",
+   "fieldtype": "Data",
+   "label": "Billed To",
+   "description": "The legal name that goes on the invoice. Falls back to the company name above."
+  },
+  {
+   "fieldname": "billing_gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN",
+   "description": "Blank means an unregistered buyer, which is a valid B2C invoice."
+  },
+  {
+   "fieldname": "billing_email",
+   "fieldtype": "Data",
+   "label": "Billing Email"
+  },
+  {
+   "fieldname": "column_break_bill",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "billing_address_line1",
+   "fieldtype": "Data",
+   "label": "Address Line 1"
+  },
+  {
+   "fieldname": "billing_address_line2",
+   "fieldtype": "Data",
+   "label": "Address Line 2"
+  },
+  {
+   "fieldname": "billing_city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "billing_state",
+   "fieldtype": "Data",
+   "label": "State",
+   "description": "Decides place of supply, so it decides CGST plus SGST against IGST. Taken from the GSTIN when one is given."
+  },
+  {
+   "fieldname": "billing_pincode",
+   "fieldtype": "Data",
+   "label": "Postal Code"
+  },
+  {
+   "fieldname": "billing_country",
+   "fieldtype": "Data",
+   "label": "Country",
+   "default": "India"
   }
  ],
  "index_web_pages_for_search": 0,

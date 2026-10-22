@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-10-17 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "upto_credits",
+  "markup_percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "upto_credits",
+   "fieldtype": "Int",
+   "label": "Up To Credits",
+   "in_list_view": 1,
+   "columns": 4,
+   "description": "Cumulative ceiling, in rupees of provider cost. Leave 0 on the last row for everything beyond."
+  },
+  {
+   "fieldname": "markup_percent",
+   "fieldtype": "Percent",
+   "label": "Markup %",
+   "in_list_view": 1,
+   "columns": 4,
+   "description": "Margin on provider cost in this band. 50 means a credit sells for 1.50."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPERA Admin",
+ "name": "AI Credit Slab",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

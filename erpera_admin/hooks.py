@@ -260,5 +260,6 @@ add_to_apps_screen = [
 scheduler_events = {
 	"daily": [
 		"erpera_admin.tasks.purge_old_records",
+		"erpera_admin.credits.expire_all",
 	],
 }

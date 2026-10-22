@@ -19,6 +19,7 @@ answered, which model, and what it cost are ours; a customer sees their plan,
 their seats, their expiry and how many questions they asked.
 """
 
+import os
 import re
 import secrets
 
@@ -445,6 +446,90 @@ def rotate_key(site=None):
 	# lapses. Saying so is better than letting them think the rotation failed.
 	return {"ok": True, "key": doc.get_password("token")}
 
+# --------------------------------------------------------------------- download
+
+def _enrol_code():
+	"""The code a customer types once, if this installation asks for one.
+
+	Only in Key mode. In the other modes there is nothing to hand over, and
+	showing an empty box would just make someone think they are missing a step.
+	"""
+	st = _settings()
+	if (st.get("enrolment_mode") or "Off").strip() != "Key":
+		return None
+	try:
+		return st.get_password("enrol_key", raise_exception=False)
+	except Exception:
+		return None
+
+
+@frappe.whitelist()
+def release():
+	"""What to download and what to do with it.
+
+	Behind sign-in, because handing over the package is the one thing an
+	account is actually for now. Nothing else on this page gates anything: the
+	site collects its own key once it is installed.
+	"""
+	_me()
+
+	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
+
+	rel = current()
+	if not rel:
+		return {"ok": False, "reason": "no_release",
+		        "message": _("No release is published yet. Please check back shortly.")}
+
+	return {
+		"ok": True,
+		"version": rel.version,
+		"released_on": rel.released_on,
+		"size_bytes": rel.size_bytes,
+		"checksum": rel.checksum,
+		"notes": rel.notes,
+		"url": "/api/method/erpera_admin.portal.download",
+		"filename": f"ai_assist-{rel.version}.tar.gz",
+		"enrol_code": _enrol_code(),
+		"trial_days": _trial_days(),
+		# Where this installation lives, taken from the address they are
+		# reading this on. The package ships with a default that suits our own
+		# bench and nobody else's, so the install pins the real one.
+		"control_url": (frappe.utils.get_url() or "").rstrip("/"),
+	}
+
+
+@frappe.whitelist()
+@rate_limit(limit=20, seconds=60 * 60)
+def download():
+	"""Hand over the package itself.
+
+	Served from here rather than as a plain file URL so that the private file
+	stays private: the check is the session, not a link that works for whoever
+	it is forwarded to.
+	"""
+	_me()
+
+	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
+
+	rel = current()
+	if not rel:
+		frappe.throw(_("No release is published yet."))
+
+	path = rel._path()
+	if not path or not os.path.exists(path):
+		frappe.log_error(title="AI Assist release file missing",
+		                 message=f"{rel.name} points at {rel.package}")
+		frappe.throw(_("The download is temporarily unavailable. Please contact support."))
+
+	with open(path, "rb") as f:
+		content = f.read()
+
+	frappe.local.response.filename = f"ai_assist-{rel.version}.tar.gz"
+	frappe.local.response.filecontent = content
+	frappe.local.response.type = "download"
+	frappe.local.response.display_content_as = "attachment"
+
+
 # ---------------------------------------------------------------------- billing
 
 
@@ -542,3 +627,112 @@ def billing():
 
 	return {"seats": seats, "plans": plans, "payments": payments,
 	        "billing_email": BILLING_EMAIL}
+
+
+# ---------------------------------------------------------------- credits
+
+@frappe.whitelist()
+def credit_calculator(site=None):
+	"""What the purchase page needs to draw itself."""
+	from erpera_admin import credits as credits_mod
+
+	name = _owned(site)
+	p = credits_mod.pricing()
+	bal = credits_mod.balance(name)
+	return {
+		"pricing": p,
+		"balance": bal["credits"],
+		"valid_upto": bal["valid_upto"],
+		"expired": bal["expired"],
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+@rate_limit(limit=20, seconds=60 * 60)
+def create_credit_order(site=None, credits=None):
+	"""Open a Razorpay order for a credit purchase.
+
+	The amount is quoted here and nowhere else. The browser says how many
+	credits it wants; what they cost is not its business to decide.
+	"""
+	from erpera_admin import credits as credits_mod, gateway
+
+	name = _owned(site)
+	q = credits_mod.quote(credits)
+
+	payment = frappe.get_doc({
+		"doctype": "AI Assist Payment",
+		"account": _me(),
+		"site": name,
+		"credits": q["credits"],
+		"status": "Pending",
+		"amount": q["net_total"],
+		"tax": q["tax"],
+		"total": q["grand_total"],
+		"currency": "INR",
+		"method": "Razorpay",
+	}).insert(ignore_permissions=True)
+
+	order = gateway.create_order(
+		q["grand_total"], receipt=payment.name,
+		notes={"site": name, "credits": str(q["credits"]), "payment": payment.name})
+
+	payment.db_set("reference", order["order_id"], update_modified=False)
+	frappe.db.commit()
+
+	return {"order": order, "quote": q, "payment": payment.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def confirm_credit_payment(razorpay_order_id=None, razorpay_payment_id=None,
+                           razorpay_signature=None):
+	"""Turn a finished Razorpay payment into credits.
+
+	Three things are checked before a single credit is granted: the signature,
+	which only Razorpay could have produced; the payment's own status fetched
+	from Razorpay rather than reported by the browser; and the amount, against
+	what we asked for. Then the record is flipped from Pending to Paid under a
+	row lock, so a double callback cannot grant twice.
+	"""
+	from erpera_admin import credits as credits_mod, gateway
+
+	if not gateway.verify_signature(razorpay_order_id, razorpay_payment_id,
+	                                razorpay_signature):
+		frappe.throw(_("This payment could not be verified."))
+
+	row = frappe.db.get_value("AI Assist Payment", {"reference": razorpay_order_id},
+	                          ["name", "site", "account"], as_dict=True)
+	if not row:
+		frappe.throw(_("Unknown order."))
+	_owned(row.site)
+
+	paid = gateway.fetch_payment(razorpay_payment_id)
+	if paid["status"] not in ("captured", "authorized"):
+		frappe.throw(_("This payment has not gone through."))
+	if paid["order_id"] != razorpay_order_id:
+		frappe.throw(_("This payment belongs to a different order."))
+
+	# Lock the record so two callbacks for one order cannot both grant.
+	locked = frappe.db.sql(
+		"""SELECT name, status, credits, total FROM `tabAI Assist Payment`
+		   WHERE name = %s FOR UPDATE""", row.name, as_dict=True)[0]
+	if locked.status == "Paid":
+		# Already handled. Saying so is friendlier than an error.
+		return {"ok": True, "already": True,
+		        "credits": credits_mod.balance(row.site)["credits"]}
+
+	if paid["amount"] != gateway.to_paise(locked.total):
+		frappe.throw(_("The amount paid does not match the order."))
+
+	credits_mod.grant(row.site, locked.credits, payment=row.name,
+	                  remarks=_("Razorpay {0}").format(razorpay_payment_id))
+
+	frappe.db.set_value("AI Assist Payment", row.name, {
+		"status": "Paid",
+		"paid_on": frappe.utils.today(),
+		"method": paid.get("method") or "Razorpay",
+	}, update_modified=False)
+	frappe.db.commit()
+
+	return {"ok": True, "already": False, "credits_added": locked.credits,
+	        "credits": credits_mod.balance(row.site)["credits"]}

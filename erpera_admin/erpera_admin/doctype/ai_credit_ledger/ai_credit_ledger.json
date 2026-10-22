@@ -1,0 +1,122 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-17 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "entry_type",
+  "occurred_on",
+  "column_break_a",
+  "credits",
+  "balance_after",
+  "valid_upto",
+  "section_source",
+  "call_record",
+  "payment",
+  "column_break_src",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "options": "Managed Site",
+   "label": "Site",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "label": "Entry Type",
+   "options": "Purchase\nConsumption\nExpiry\nAdjustment\nOpening",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "occurred_on",
+   "fieldtype": "Datetime",
+   "label": "Occurred On",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "credits",
+   "fieldtype": "Float",
+   "label": "Credits",
+   "in_list_view": 1,
+   "description": "Signed, in rupees of provider cost. Positive adds to the balance, negative takes away.",
+   "precision": "6"
+  },
+  {
+   "fieldname": "balance_after",
+   "fieldtype": "Float",
+   "label": "Balance After",
+   "in_list_view": 1,
+   "read_only": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Valid Upto",
+   "description": "Set on a purchase. The whole balance carries the latest date."
+  },
+  {
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "call_record",
+   "fieldtype": "Link",
+   "options": "AI Call Record",
+   "label": "Call Record",
+   "description": "The model call this consumption paid for."
+  },
+  {
+   "fieldname": "payment",
+   "fieldtype": "Link",
+   "options": "AI Assist Payment",
+   "label": "Payment"
+  },
+  {
+   "fieldname": "column_break_src",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "ERPERA Admin",
+ "name": "AI Credit Ledger",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "occurred_on",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

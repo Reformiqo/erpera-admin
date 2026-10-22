@@ -16,6 +16,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, now_datetime
 
+from erpera_admin import credits
+
 MAX_ROWS = 500          # one batch; a site with more simply sends again
 MAX_CONTENT = 8000      # per field, matching what the sites store
 
@@ -76,7 +78,7 @@ def ingest(site=None, token=None, rows=None):
 
 	keep_content = cint(frappe.db.get_single_value("ERPERA AI Settings", "log_content"))
 
-	stored, skipped = 0, 0
+	stored, skipped, spent = 0, 0, 0
 	for r in rows:
 		remote = (r or {}).get("name")
 		if not remote:
@@ -115,8 +117,15 @@ def ingest(site=None, token=None, rows=None):
 			doc["prompt"] = _shorten(r.get("prompt"))
 			doc["response"] = _shorten(r.get("response"))
 
-		frappe.get_doc(doc).insert(ignore_permissions=True)
+		rec = frappe.get_doc(doc).insert(ignore_permissions=True)
 		stored += 1
+
+		# A failed call is not charged for. The customer got no answer, and a
+		# provider outage is not something they should pay to sit through.
+		if doc["status"] == "Success":
+			cost = credits.cost_of(r)
+			credits.consume(site_name, cost, call_record=rec.name)
+			spent += cost
 
 	frappe.db.set_value("Managed Site", site_name, {
 		"last_seen": now_datetime(),
@@ -124,7 +133,8 @@ def ingest(site=None, token=None, rows=None):
 	}, update_modified=False)
 	frappe.db.commit()
 
-	return {"ok": True, "accepted": stored, "skipped": skipped}
+	return {"ok": True, "accepted": stored, "skipped": skipped,
+	        "credits_spent": spent, "credits": credits.balance(site_name)["credits"]}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -134,8 +144,16 @@ def get_config(site=None, token=None):
 
 	from erpera_admin.erpera_admin.doctype.erpera_ai_settings.erpera_ai_settings import resolved_config
 
+	from erpera_admin import relay as relay_mod
+
 	cfg = resolved_config()
-	if cint(frappe.db.get_single_value("ERPERA AI Settings", "share_keys")):
+	# A relaying site must not be handed a provider or a model to store. It is
+	# not calling one, and anything it stores its operator can read.
+	cfg["relay"] = 1 if relay_mod.enabled() else 0
+	if cfg["relay"]:
+		cfg["primary"] = None
+		cfg["fallback"] = None
+	if not cfg["relay"] and cint(frappe.db.get_single_value("ERPERA AI Settings", "share_keys")):
 		# Opt-in, and only for sites we operate ourselves.
 		s = frappe.get_cached_doc("ERPERA AI Settings")
 		for slot, field in (("primary", "active_provider"), ("fallback", "fallback_provider")):
@@ -169,7 +187,7 @@ def verify(site=None, token=None):
 
 	row = frappe.db.get_value(
 		"Managed Site", site,
-		["name", "enabled", "plan", "seats", "valid_until"], as_dict=True)
+		["name", "enabled", "plan", "seats", "valid_until", "last_verified"], as_dict=True)
 	if not row:
 		return denied
 
@@ -179,6 +197,13 @@ def verify(site=None, token=None):
 		return denied
 
 	if not row.enabled:
+		# A site that has never had a yes from us was never switched on in the
+		# first place, which is a different sentence from one we have turned
+		# off. last_verified is only ever written on success, so its absence is
+		# the cleanest evidence of which of the two this is.
+		if not row.last_verified:
+			return {"ok": False, "reason": "pending_approval",
+			        "message": _("This site is registered and waiting for approval.")}
 		return {"ok": False, "reason": "suspended",
 		        "message": _("This site's AI Assist subscription is suspended.")}
 
@@ -187,14 +212,145 @@ def verify(site=None, token=None):
 		        "message": _("This site's AI Assist subscription expired on {0}.").format(
 			        frappe.utils.formatdate(row.valid_until))}
 
+	# An empty wallet refuses in exactly the same shape as an unpaid
+	# subscription, so the site needs no new branch to handle it and the
+	# customer reads one sentence telling them what to do about it.
+	wallet = credits.check(row.name)
+	if not wallet.get("ok"):
+		return {"ok": False, "reason": wallet["reason"], "message": wallet["message"],
+		        "credits": 0}
+
 	frappe.db.set_value("Managed Site", row.name, "last_verified", now_datetime(),
 	                    update_modified=False)
 	frappe.db.commit()
+
+	from erpera_admin import relay as relay_mod
 
 	return {
 		"ok": True,
 		"plan": row.plan,
 		"seats": cint(row.seats),
+		# When this is on the site sends us the conversation instead of calling
+		# a provider itself, and never learns which model answered.
+		"relay": 1 if relay_mod.enabled() else 0,
 		"valid_until": str(row.valid_until) if row.valid_until else None,
 		"grace_hours": GRACE_HOURS,
+		"credits": wallet.get("credits"),
+		"credits_valid_upto": wallet.get("valid_upto"),
+		"credits_low": wallet.get("low", False),
 	}
+
+
+# ------------------------------------------------------------------ credits
+
+@frappe.whitelist(allow_guest=True)
+def credit_account(site=None, token=None):
+	"""What the tenant's purchase page needs. Authenticated by site token."""
+	from erpera_admin import billing
+
+	site_name = _authenticate(site, token)
+	return billing.account(site_name)
+
+
+@frappe.whitelist(allow_guest=True)
+def credit_quote(site=None, token=None, credits=None):
+	"""Price a basket without opening an order."""
+	from erpera_admin import billing
+
+	_authenticate(site, token)
+	return billing.quote(credits)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def credit_order(site=None, token=None, credits=None):
+	"""Open a Razorpay order for this site."""
+	from erpera_admin import billing
+
+	site_name = _authenticate(site, token)
+	return billing.place_order(site_name, credits)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def credit_confirm(site=None, token=None, razorpay_order_id=None,
+                   razorpay_payment_id=None, razorpay_signature=None):
+	"""Settle a finished payment into credits."""
+	from erpera_admin import billing
+
+	site_name = _authenticate(site, token)
+	return billing.settle(razorpay_order_id, razorpay_payment_id,
+	                      razorpay_signature, site=site_name)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def credit_simulate(site=None, token=None, order_id=None, fail=0):
+	"""Stand in for the browser's checkout while there is no working key.
+
+	Guarded inside the gateway: a live key or a server not in developer mode
+	refuses outright, so this cannot mint credits anywhere real.
+	"""
+	from erpera_admin import gateway
+
+	_authenticate(site, token)
+	return gateway.simulate_checkout(order_id, fail=cint(fail))
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def enrol(site=None, base_url=None, email=None, company_name=None, enrol_key=None):
+	"""Register a site and issue its key.
+
+	Guest-reachable by necessity: a site with no key cannot authenticate, which
+	is the whole point of calling this. What guards it is enrolment_mode, a
+	per-address rate limit, and the fact that a new site starts with no credits
+	and so cannot spend anything.
+	"""
+	from erpera_admin import enrolment
+
+	ip = frappe.local.request_ip if hasattr(frappe.local, "request_ip") else None
+	return enrolment.enrol(site=site, base_url=base_url, email=email,
+	                       company_name=company_name, enrol_key=enrol_key, ip=ip)
+
+
+# -------------------------------------------------------------------- relay
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def chat(site=None, token=None, messages=None, system=None, tools=None,
+         max_tokens=4096, context=None):
+	"""Answer on a site's behalf.
+
+	The conversation comes up, the answer goes down, and which model produced
+	it stays here. Authenticated by site token like everything else on this
+	edge, because the caller is that site's server, not a person.
+	"""
+	from erpera_admin import relay as relay_mod
+
+	site_name = _authenticate(site, token)
+	if not relay_mod.enabled():
+		frappe.local.response["http_status_code"] = 503
+		return {"ok": False, "error": "relay disabled"}
+
+	if isinstance(messages, str):
+		messages = json.loads(messages)
+	if isinstance(tools, str):
+		tools = json.loads(tools)
+	if isinstance(context, str):
+		context = json.loads(context)
+
+	return relay_mod.chat(site_name, messages=messages, system=system, tools=tools,
+	                      max_tokens=max_tokens, context=context)
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def see(site=None, token=None, image=None, prompt=None, max_tokens=2048, context=None):
+	"""Read one image on a site's behalf. Named for what it does, not for a vendor."""
+	from erpera_admin import relay as relay_mod
+
+	site_name = _authenticate(site, token)
+	if not relay_mod.enabled():
+		frappe.local.response["http_status_code"] = 503
+		return {"ok": False, "error": "relay disabled"}
+
+	if isinstance(context, str):
+		context = json.loads(context)
+
+	return relay_mod.vision(site_name, image_data_url=image, prompt=prompt,
+	                        max_tokens=max_tokens, context=context)
