@@ -273,3 +273,90 @@ def vision(site, image_data_url=None, prompt=None, max_tokens=2048, context=None
 	frappe.log_error(title=f"Relay vision failed for {site}",
 	                 message=str(first_error)[:2000])
 	frappe.throw(_("AI Assist could not read that image just now."), RelayRefused)
+
+
+# ─── speech ───────────────────────────────────────────────────────────────────
+
+# Whisper invents fluent text from silence or noise: a plain tone comes back as
+# "Продолжение следует...", a caption it over-learned. Pinning the language
+# removes most of it, and a result with almost no letters left is treated as
+# "nothing was said" rather than passed downstream as an instruction.
+MIN_MEANINGFUL_CHARS = 2
+
+
+def _provider_slot(name):
+	"""The first enabled credential for one named provider, with its key.
+
+	Transcription is not the active chat provider's job: a site can be answering
+	through Claude and still need Groq's Whisper. So this looks the provider up
+	by name rather than by which slot is currently in use.
+	"""
+	for cred_name in frappe.get_all("AI Provider Credential",
+	                                filters={"provider": name, "enabled": 1},
+	                                order_by="modified desc", pluck="name"):
+		key = frappe.utils.password.get_decrypted_password(
+			"AI Provider Credential", cred_name, "api_key", raise_exception=False)
+		if key:
+			cred = frappe.get_cached_doc("AI Provider Credential", cred_name)
+			return {"provider": name, "api_key": key, "base_url": cred.base_url or "",
+			        "credential": cred_name}
+	return None
+
+
+def hear(site, audio=None, filename="voice.ogg", mime="audio/ogg", context=None):
+	"""One voice note, turned into text by us.
+
+	This used to happen on the customer's site, which meant a Groq key had to
+	sit there for it, in plain reach of the person whose key it was not. Moving
+	it here is the same argument as the rest of the relay: the only way to keep
+	a key is to be the one holding it.
+	"""
+	import base64
+
+	if not audio:
+		frappe.throw(_("Nothing to listen to."), RelayRefused)
+	wallet = _gate(site)
+	billable = wallet.get("reason") == "ok"
+	ctx = context or {}
+
+	slot = _provider_slot("groq")
+	if not slot:
+		frappe.log_error(title="Relay cannot transcribe",
+		                 message="No enabled Groq credential with a stored key.")
+		frappe.throw(_("Voice notes are not available right now."), RelayRefused)
+
+	try:
+		data = base64.b64decode(audio)
+	except Exception:
+		frappe.throw(_("That voice note could not be read."), RelayRefused)
+
+	model = llm.TRANSCRIBE_MODEL
+	t0 = time.perf_counter()
+	try:
+		text, seconds = llm.transcribe(slot["api_key"], data, filename=filename,
+		                               mime=mime, base_url=slot["base_url"] or None)
+	except llm.ProviderError as e:
+		ms = int((time.perf_counter() - t0) * 1000)
+		_record(site, ctx, "transcription", "groq", model, {}, ms, "Failed", 0, False,
+		        error=e)
+		frappe.db.commit()
+		frappe.log_error(title=f"Relay transcription failed for {site}",
+		                 message=str(e)[:2000])
+		frappe.throw(_("That voice note could not be transcribed. Please try again."),
+		             RelayRefused)
+
+	ms = int((time.perf_counter() - t0) * 1000)
+	# Billed by audio duration rather than tokens, so the seconds go in the
+	# token column that rating already reads.
+	usage = {"prompt_tokens": seconds, "completion_tokens": 0}
+	cost = _cost("groq", model, usage)
+	rec = _record(site, ctx, "transcription", "groq", model, usage, ms, "Success",
+	              cost, False, prompt=f"[voice note, {seconds}s]", response=text)
+	if billable:
+		credits_mod.consume(site, cost, call_record=rec.name)
+	frappe.db.commit()
+
+	if sum(c.isalnum() for c in text) < MIN_MEANINGFUL_CHARS:
+		text = ""
+	return {"text": text, "seconds": seconds, "credits_spent": cost,
+	        "credits": credits_mod.balance(site)["credits"]}

@@ -253,3 +253,35 @@ def vision(provider, api_key, model, image_data_url, prompt, max_tokens=2048,
 		             ]}]})
 	text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
 	return text, (data.get("usage") or {})
+
+
+# ─── speech ───────────────────────────────────────────────────────────────────
+
+TRANSCRIBE_MODEL = "whisper-large-v3-turbo"
+TRANSCRIBE_TIMEOUT = 120
+
+
+def transcribe(api_key, data, filename="voice.ogg", mime="audio/ogg",
+               model=None, language="en", base_url=None):
+	"""Audio in, (text, seconds) out, through the OpenAI-compatible endpoint.
+
+	Returns the duration as well as the text because Whisper is billed by audio
+	length rather than tokens, and a usage row that cannot say what it consumed
+	is not a usage row.
+	"""
+	base = (base_url or OPENAI_COMPAT["groq"]["base"]).rstrip("/")
+	try:
+		r = _get_session().post(
+			f"{base}/audio/transcriptions",
+			headers={"Authorization": f"Bearer {api_key}"},
+			files={"file": (filename, data, mime or "audio/ogg")},
+			data={"model": model or TRANSCRIBE_MODEL, "language": language,
+			      "response_format": "verbose_json"},
+			timeout=TRANSCRIBE_TIMEOUT,
+		)
+	except requests.RequestException as e:
+		raise ProviderNetworkError(str(e)[:300])
+	if r.status_code >= 400:
+		raise ProviderError(f"HTTP {r.status_code}: {r.text[:200]}")
+	body = r.json()
+	return (body.get("text") or "").strip(), int(float(body.get("duration") or 0))

@@ -591,3 +591,39 @@ def dashboard(site=None, token=None, company=None, days=None, context=None):
 	if days:
 		return {"ok": True, "trends": dash.get_dashboard_trends(target, company, cint(days))}
 	return {"ok": True, "today": dash.today_summary(target, company)}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def read_document(site=None, token=None, image=None, context=None):
+	"""Read a bill and say what to do with it.
+
+	The image comes up, the fields come down. What the model was told to look
+	for stays here, which is the whole reason this endpoint exists rather than
+	the site calling a vision model itself.
+	"""
+	from erpera_admin import relay as relay_mod
+	from erpera_admin.brain import vision
+
+	site_name = _authenticate(site, token)
+	if not relay_mod.enabled():
+		frappe.local.response["http_status_code"] = 503
+		return {"ok": False, "error": "relay disabled"}
+
+	v = vision.extract(site_name, image, context=_parsed(context) or {})
+	return {"ok": True, "extracted": v, "message": vision.to_message(v)}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def hear(site=None, token=None, audio=None, filename=None, mime=None, context=None):
+	"""Turn a voice note into text, with our key rather than one of theirs."""
+	from erpera_admin import relay as relay_mod
+
+	site_name = _authenticate(site, token)
+	if not relay_mod.enabled():
+		frappe.local.response["http_status_code"] = 503
+		return {"ok": False, "error": "relay disabled"}
+
+	return {"ok": True, **relay_mod.hear(site_name, audio=audio,
+	                                     filename=filename or "voice.ogg",
+	                                     mime=mime or "audio/ogg",
+	                                     context=_parsed(context) or {})}
