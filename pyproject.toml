@@ -23,6 +23,14 @@ build-backend = "flit_core.buildapi"
 [deploy.dependencies.apt]
 packages = []
 
+# Frappe Cloud reads this to work out which bench an app can go on. Without it
+# the "Add app to bench" step refuses the repository outright. The lower bound
+# is written -dev so a bench tracking the develop branch, which reports
+# 16.0.0-dev, still counts as v16.
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0-dev,<17.0.0"
+erpnext = ">=16.0.0-dev,<17.0.0"
+
 [tool.ruff]
 line-length = 110
 target-version = "py314"
