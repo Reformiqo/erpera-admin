@@ -230,7 +230,8 @@ def me():
 	}
 
 
-@frappe.whitelist(allow_guest=True, methods=["POST"])
+# Deliberately not whitelisted. Nobody signs up: the app is an open download
+# and a site identifies itself with the key it collects on its own.
 @rate_limit(limit=5, seconds=60 * 60)
 def sign_up(email=None, full_name=None, password=None):
 	"""Create an account and sign it in.
@@ -463,16 +464,16 @@ def _enrol_code():
 		return None
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=120, seconds=60 * 60)
 def release():
 	"""What to download and what to do with it.
 
-	Behind sign-in, because handing over the package is the one thing an
-	account is actually for now. Nothing else on this page gates anything: the
-	site collects its own key once it is installed.
+	Open. There is no account to make and nothing to sign in to: a sign-up
+	form in front of a download is a toll gate, not a security control, and
+	the thing that actually decides whether a site may ask a question is the
+	licence check it makes after it is installed.
 	"""
-	_me()
-
 	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
 
 	rel = current()
@@ -498,17 +499,15 @@ def release():
 	}
 
 
-@frappe.whitelist()
-@rate_limit(limit=20, seconds=60 * 60)
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=30, seconds=60 * 60)
 def download():
 	"""Hand over the package itself.
 
-	Served from here rather than as a plain file URL so that the private file
-	stays private: the check is the session, not a link that works for whoever
-	it is forwarded to.
+	Served from here rather than as a plain file URL so the release stays one
+	addressable thing: publish a new one and this hands over the new one, with
+	no stale link anywhere to go wrong.
 	"""
-	_me()
-
 	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
 
 	rel = current()
