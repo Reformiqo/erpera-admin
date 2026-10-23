@@ -40,8 +40,8 @@ def get_columns(filters):
 		{"fieldname": "failed", "label": _("Failed"), "fieldtype": "Int", "width": 85},
 		{"fieldname": "input_tokens", "label": _("Input Tokens"), "fieldtype": "Int", "width": 120},
 		{"fieldname": "output_tokens", "label": _("Output Tokens"), "fieldtype": "Int", "width": 125},
-		{"fieldname": "cost", "label": _("Cost"), "fieldtype": "Float", "precision": 6, "width": 110},
-		{"fieldname": "cost_per_turn", "label": _("Cost / Question"), "fieldtype": "Float", "precision": 6, "width": 130},
+		{"fieldname": "cost", "label": _("Cost (\u20B9)"), "fieldtype": "Float", "precision": 6, "width": 110},
+		{"fieldname": "cost_per_turn", "label": _("Cost / Question (\u20B9)"), "fieldtype": "Float", "precision": 6, "width": 130},
 		{"fieldname": "avg_ms", "label": _("Avg Call (ms)"), "fieldtype": "Int", "width": 115},
 		{"fieldname": "unrated", "label": _("Unpriced Calls"), "fieldtype": "Int", "width": 125},
 	]

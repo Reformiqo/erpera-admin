@@ -15,8 +15,11 @@ frappe.pages["ai-control"].on_page_load = function (wrapper) {
 };
 
 const esc = frappe.utils.escape_html;
+// Every cost on this page is already rupees: cost_of() converts a provider's
+// USD rate at the configured usd_inr before it writes the row. The dollar sign
+// here was a label on a number that had never been a dollar.
 const money = (v, dp = 4) =>
-	"$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+	"\u20B9" + Number(v || 0).toLocaleString("en-IN", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 const num = (v) => Number(v || 0).toLocaleString("en-IN");
 
 class AIControl {
