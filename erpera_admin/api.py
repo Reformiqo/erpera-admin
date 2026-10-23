@@ -472,8 +472,21 @@ def erp_state(site=None, token=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+def agents(site=None, token=None):
+	"""The agents this site may choose from.
+
+	Served rather than shipped, so retiring one or retuning how it thinks takes
+	a deploy here and nothing at all on a customer's site.
+	"""
+	from erpera_admin.brain import agents as brain_agents
+
+	_authenticate(site, token)
+	return {"ok": True, "agents": brain_agents.catalogue()}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def ask(site=None, token=None, message=None, history=None, mode="desk",
-        config=None, context=None, allow_instant=0):
+        context=None, allow_instant=0, **_ignored):
 	"""One whole conversational turn, reasoned here and read from there.
 
 	The tenant sends a question and who is asking. Everything that decides the
@@ -482,7 +495,7 @@ def ask(site=None, token=None, message=None, history=None, mode="desk",
 	to answer, and keep nothing but the usage record.
 	"""
 	from erpera_admin import erp, relay as relay_mod
-	from erpera_admin.brain import agent as brain_agent, instant
+	from erpera_admin.brain import agent as brain_agent, agents as brain_agents, instant
 
 	site_name = _authenticate(site, token)
 	if not relay_mod.enabled():
@@ -492,10 +505,20 @@ def ask(site=None, token=None, message=None, history=None, mode="desk",
 		return {"ok": False, "error": _("Nothing to answer.")}
 
 	history = _parsed(history) or []
-	config = _parsed(config) or None
 	context = _parsed(context) or {}
 	context.setdefault("channel", "Desk")
 	user = (context.get("user") or "").strip() or None
+	# Which agent is asking is the site's to say; what that agent may do is
+	# ours. A config sent from a tenant is ignored outright, so a customer who
+	# edits their own copy of the client cannot grant themselves draft rights
+	# the Analyst was never given. `deny_drafts` is honoured because it only
+	# ever takes something away.
+	agent_id = (context.get("agent") or "").strip() or None
+	config = brain_agents.config(
+		agent_id,
+		channel=context.get("channel"),
+		deny_drafts=bool(cint(context.get("deny_drafts"))),
+	) if agent_id else None
 	# Their own notes from earlier sessions, which are theirs to send and ours
 	# to append rather than invent. Capped so a tenant cannot rewrite the prompt.
 	extra = (context.pop("extra_system", None) or "")[:4000] or None
