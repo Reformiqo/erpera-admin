@@ -295,7 +295,7 @@ def credit_simulate(site=None, token=None, order_id=None, fail=0):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-def enrol(site=None, base_url=None, email=None, company_name=None, enrol_key=None):
+def enrol(site=None, base_url=None, email=None, company_name=None):
 	"""Register a site and issue its key.
 
 	Guest-reachable by necessity: a site with no key cannot authenticate, which
@@ -307,7 +307,7 @@ def enrol(site=None, base_url=None, email=None, company_name=None, enrol_key=Non
 
 	ip = frappe.local.request_ip if hasattr(frappe.local, "request_ip") else None
 	return enrolment.enrol(site=site, base_url=base_url, email=email,
-	                       company_name=company_name, enrol_key=enrol_key, ip=ip)
+	                       company_name=company_name, ip=ip)
 
 
 # -------------------------------------------------------------------- relay

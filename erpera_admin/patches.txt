@@ -1,5 +1,6 @@
 [pre_model_sync]
 erpera_admin.patches.v1_0.rename_erpera_to_ttac
+erpera_admin.patches.v1_0.drop_enrolment_code
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
 

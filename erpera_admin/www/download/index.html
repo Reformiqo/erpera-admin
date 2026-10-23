@@ -195,12 +195,6 @@ frappe.ready(function () {
 	}
 
 	function render(r) {
-		var code = r.enrol_code
-			? '<p style="margin:0 0 2px">Your enrolment code:</p>' +
-			  '<div class="code-pill">' + esc(r.enrol_code) + "</div>"
-			: '<p class="note" style="margin-top:6px">No enrolment code needed. ' +
-			  "Leave that box empty.</p>";
-
 		host.innerHTML =
 			'<div class="banner"><div class="dot"></div><div>' +
 				"<b>Version " + esc(r.version) + "</b> is the current release" +
@@ -235,7 +229,6 @@ frappe.ready(function () {
 				"<h2>Switch it on</h2>" +
 				"<p>Open your site, go to <b>AI Assist</b> in the sidebar and then " +
 					"<b>Setup &amp; Status</b>. Press <b>Connect This Site</b>.</p>" +
-				'<div style="margin-top:12px">' + code + "</div>" +
 				'<p class="note" style="margin-top:14px">That is the last of it. The site ' +
 					"registers itself and collects its own key. There is nothing to copy " +
 					"back here and no key for anyone to lose.</p>" +

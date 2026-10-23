@@ -9,10 +9,13 @@ Every one of those steps is a place to lose a customer, and the last one is a
 place to lose a key.
 
 Here the site asks us for its own key and stores it without a human reading
-it. What stops that being an open door is `enrolment_mode`, and more to the
-point, credits: a freshly enrolled site has a zero balance and cannot make a
-single model call until it buys some. Giving away an account costs nothing
-when the account cannot spend anything.
+it. There is no code to hand over and nothing to type: a code is one more
+thing to publish, lose and support, and it never stopped anybody who had the
+address anyway. What stops this being an open door is credits: a freshly
+enrolled site has a zero balance and cannot make a single model call until it
+buys some. Giving away an account costs nothing when the account cannot spend
+anything. `enrolment_mode` is still there for closing the door (Off) or
+holding sites at the threshold until someone looks (Approval).
 
 A key is returned exactly once, at enrolment. Asking again for a site that
 already has one is refused rather than rotated, because a second caller
@@ -36,7 +39,9 @@ def _settings():
 
 
 def _mode():
-	return (_settings().get("enrolment_mode") or "Off").strip()
+	# Unset means Open, which is also the field default, so an installation
+	# that was never configured behaves the same way as one that was.
+	return (_settings().get("enrolment_mode") or "Open").strip()
 
 
 def _check_rate(ip):
@@ -61,8 +66,7 @@ def _normalise(site):
 	return site.rstrip("/").split("/")[0]
 
 
-def enrol(site=None, base_url=None, email=None, company_name=None, enrol_key=None,
-          ip=None):
+def enrol(site=None, base_url=None, email=None, company_name=None, ip=None):
 	"""Register a site and hand back its key, once."""
 	mode = _mode()
 	if mode == "Off":
@@ -70,13 +74,6 @@ def enrol(site=None, base_url=None, email=None, company_name=None, enrol_key=Non
 
 	_check_rate(ip)
 	site = _normalise(site)
-
-	if mode == "Key":
-		expected = _settings().get_password("enrol_key", raise_exception=False) or ""
-		if not expected:
-			frappe.throw(_("This licence server has no enrolment code set."), EnrolmentRefused)
-		if not secrets.compare_digest(str(expected), str(enrol_key or "")):
-			frappe.throw(_("That enrolment code is not right."), EnrolmentRefused)
 
 	existing = frappe.db.get_value("Managed Site", site, ["name", "enabled"], as_dict=True)
 	if existing:

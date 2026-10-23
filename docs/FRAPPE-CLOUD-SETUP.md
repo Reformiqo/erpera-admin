@@ -65,10 +65,11 @@ Install `erpera_admin`, then:
 - Provider, Model: the credential above. Set the Fallback pair too if you have a second key.
 - **Answer On Behalf Of Sites: on.** This is the master switch. Off, and every
   customer question comes back `503 relay disabled`.
-- Enrolment Mode: ships as `Key`. Set an Enrolment Code and hand that to
-  customers. With mode `Key` and no code set, enrolment refuses every site.
-  `Off` refuses everything, `Open` lets any site register itself, `Approval`
-  registers it but holds it.
+- Enrolment Mode: ships as `Open`, and there is nothing to hand a customer.
+  Any site that installs the app registers itself. `Approval` registers it but
+  holds it disabled until you enable it; `Off` refuses everything. What keeps
+  `Open` safe is Trial Credits, below: a site that enrols with a zero balance
+  has an account it cannot spend.
 - Credits: leave **Sell Credits off** until you are actually billing. On, a
   freshly enrolled site has a zero balance and cannot ask a single question.
   The per-site `on_credits` flag is the second switch, so turning the feature
@@ -90,8 +91,8 @@ bench refuses the app with "Could not find a compatible Frappe version".)
 Open `/app/ai-assist-setup` as a System Manager. The page is a four step
 checklist and the last two steps are the two links.
 
-**Connect this site.** Contact email, company name, and the enrolment code from
-step 1. This posts to `erpera_admin.api.enrol`, and the site name and token come
+**Connect this site.** Contact email and company name, and nothing else to
+type. This posts to `erpera_admin.api.enrol`, and the site name and token come
 back and are stored without anyone reading them. It runs once: a site that
 already has a token is refused rather than rotated, because a second caller
 claiming to be an existing site is either a mistake or an attack.
@@ -144,8 +145,6 @@ answer plus the usage.
 | What you see | What it is |
 |---|---|
 | "This licence server is not accepting new sites" | Enrolment Mode is `Off` |
-| "This licence server has no enrolment code set" | Mode is `Key` with an empty code |
-| "That enrolment code is not right" | the code does not match |
 | "... is already registered" | a `Managed Site` of that name exists; enrol never re-issues |
 | "The site address must use https://" | `base_url` is `http://` |
 | "points to a private network, which we cannot reach" | `base_url` resolves to a private or loopback IP from the control site |

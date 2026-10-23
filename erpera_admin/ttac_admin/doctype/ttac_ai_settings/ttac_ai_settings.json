@@ -42,7 +42,6 @@
   "credit_slabs",
   "section_enrolment",
   "enrolment_mode",
-  "enrol_key",
   "column_break_enrol",
   "trial_credits",
   "enrol_rate_limit",
@@ -268,18 +267,12 @@
    "label": "Self Enrolment"
   },
   {
-   "default": "Key",
-   "description": "Off: keys are issued by hand. Key: the site must present the shared code below. Approval: the site enrols but arrives disabled until you enable it. Open: anyone who installs the app is enrolled.",
+   "default": "Open",
+   "description": "Open: anyone who installs the app is enrolled, and Trial Credits decides what that is worth. Approval: the site enrols but arrives disabled until you enable it. Off: keys are issued by hand.",
    "fieldname": "enrolment_mode",
    "fieldtype": "Select",
    "label": "Enrolment Mode",
-   "options": "Off\nKey\nApproval\nOpen"
-  },
-  {
-   "description": "One short code you give customers. Beats making them log into a portal to copy a 43 character key.",
-   "fieldname": "enrol_key",
-   "fieldtype": "Password",
-   "label": "Enrolment Code"
+   "options": "Open\nApproval\nOff"
   },
   {
    "fieldname": "column_break_enrol",

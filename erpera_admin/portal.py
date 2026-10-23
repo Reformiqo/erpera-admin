@@ -449,21 +449,6 @@ def rotate_key(site=None):
 
 # --------------------------------------------------------------------- download
 
-def _enrol_code():
-	"""The code a customer types once, if this installation asks for one.
-
-	Only in Key mode. In the other modes there is nothing to hand over, and
-	showing an empty box would just make someone think they are missing a step.
-	"""
-	st = _settings()
-	if (st.get("enrolment_mode") or "Off").strip() != "Key":
-		return None
-	try:
-		return st.get_password("enrol_key", raise_exception=False)
-	except Exception:
-		return None
-
-
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=120, seconds=60 * 60)
 def release():
@@ -490,7 +475,6 @@ def release():
 		"notes": rel.notes,
 		"url": "/api/method/erpera_admin.portal.download",
 		"filename": f"ai_assist-{rel.version}.tar.gz",
-		"enrol_code": _enrol_code(),
 		"trial_days": _trial_days(),
 		# Where this installation lives, taken from the address they are
 		# reading this on. The package ships with a default that suits our own
