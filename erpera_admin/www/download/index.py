@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """The page the app is downloaded from.
@@ -22,7 +22,7 @@ def get_context(context):
 	context.no_sidebar = 1
 	context.title = "Install AI Assist"
 
-	s = frappe.get_cached_doc("ERPERA AI Settings")
+	s = frappe.get_cached_doc("TTAC AI Settings")
 	context.trial_days = cint(s.get("trial_days")) or 15
 
 	return context

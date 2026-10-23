@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Answering on a customer's behalf, so their site never learns how.
@@ -43,11 +43,11 @@ class RelayRefused(frappe.ValidationError):
 
 
 def enabled():
-	return bool(cint(frappe.db.get_single_value("ERPERA AI Settings", "relay_enabled")))
+	return bool(cint(frappe.db.get_single_value("TTAC AI Settings", "relay_enabled")))
 
 
 def _settings():
-	return frappe.get_cached_doc("ERPERA AI Settings")
+	return frappe.get_cached_doc("TTAC AI Settings")
 
 
 def _slot(field_provider, field_model):

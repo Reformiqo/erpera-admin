@@ -1,4 +1,4 @@
-### ERPERA Admin
+### TTAC Admin
 
 Central control plane for ERPERA AI: model selection and call metering across sites
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Who the assistant can be, decided here.

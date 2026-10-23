@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """58 answers that need no model at all, now asked from here.

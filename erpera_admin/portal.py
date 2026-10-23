@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """The customer's side of the control plane.
@@ -28,7 +28,7 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import add_days, cint, escape_html, flt, getdate, now_datetime, today
 
-# Trial defaults, overridable in ERPERA AI Settings. The cap is the important
+# Trial defaults, overridable in TTAC AI Settings. The cap is the important
 # one: without it a single sign-up could mint trial keys in a loop.
 TRIAL_DAYS = 15
 MAX_SITES = 3
@@ -43,7 +43,7 @@ HOSTNAME = re.compile(r"^[a-z0-9]([a-z0-9.-]{1,98}[a-z0-9])?$")
 MIN_PASSWORD = 8
 
 # Where someone is sent when the page cannot finish the job itself.
-BILLING_EMAIL = "hello@reformiqo.com"
+BILLING_EMAIL = "hello@thetinyappcompany.com"
 
 
 # --------------------------------------------------------------------- helpers
@@ -51,7 +51,7 @@ BILLING_EMAIL = "hello@reformiqo.com"
 
 def _settings():
 	try:
-		return frappe.get_cached_doc("ERPERA AI Settings")
+		return frappe.get_cached_doc("TTAC AI Settings")
 	except Exception:
 		return frappe._dict()
 
@@ -474,7 +474,7 @@ def release():
 	the thing that actually decides whether a site may ask a question is the
 	licence check it makes after it is installed.
 	"""
-	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
+	from erpera_admin.ttac_admin.doctype.ai_assist_release.ai_assist_release import current
 
 	rel = current()
 	if not rel:
@@ -508,7 +508,7 @@ def download():
 	addressable thing: publish a new one and this hands over the new one, with
 	no stale link anywhere to go wrong.
 	"""
-	from erpera_admin.erpera_admin.doctype.ai_assist_release.ai_assist_release import current
+	from erpera_admin.ttac_admin.doctype.ai_assist_release.ai_assist_release import current
 
 	rel = current()
 	if not rel:

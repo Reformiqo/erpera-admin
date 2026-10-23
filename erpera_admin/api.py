@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """The control plane's edge.
@@ -65,7 +65,7 @@ def ingest(site=None, token=None, rows=None):
 	"""
 	site_name = _authenticate(site, token)
 
-	if not cint(frappe.db.get_single_value("ERPERA AI Settings", "ingest_enabled")):
+	if not cint(frappe.db.get_single_value("TTAC AI Settings", "ingest_enabled")):
 		frappe.local.response["http_status_code"] = 503
 		return {"ok": False, "error": "ingest disabled"}
 
@@ -76,7 +76,7 @@ def ingest(site=None, token=None, rows=None):
 		frappe.local.response["http_status_code"] = 413
 		return {"ok": False, "error": f"at most {MAX_ROWS} rows per batch", "accepted": 0}
 
-	keep_content = cint(frappe.db.get_single_value("ERPERA AI Settings", "log_content"))
+	keep_content = cint(frappe.db.get_single_value("TTAC AI Settings", "log_content"))
 
 	stored, skipped, spent = 0, 0, 0
 	for r in rows:
@@ -142,7 +142,7 @@ def get_config(site=None, token=None):
 	"""Which provider and model this site should answer with."""
 	site_name = _authenticate(site, token)
 
-	from erpera_admin.erpera_admin.doctype.erpera_ai_settings.erpera_ai_settings import resolved_config
+	from erpera_admin.ttac_admin.doctype.ttac_ai_settings.ttac_ai_settings import resolved_config
 
 	from erpera_admin import relay as relay_mod
 
@@ -153,9 +153,9 @@ def get_config(site=None, token=None):
 	if cfg["relay"]:
 		cfg["primary"] = None
 		cfg["fallback"] = None
-	if not cfg["relay"] and cint(frappe.db.get_single_value("ERPERA AI Settings", "share_keys")):
+	if not cfg["relay"] and cint(frappe.db.get_single_value("TTAC AI Settings", "share_keys")):
 		# Opt-in, and only for sites we operate ourselves.
-		s = frappe.get_cached_doc("ERPERA AI Settings")
+		s = frappe.get_cached_doc("TTAC AI Settings")
 		for slot, field in (("primary", "active_provider"), ("fallback", "fallback_provider")):
 			if cfg.get(slot) and s.get(field):
 				cfg[slot]["api_key"] = frappe.utils.password.get_decrypted_password(
@@ -442,7 +442,7 @@ def register_key(site=None, token=None, user=None, api_key=None, api_secret=None
 	if who and who != user:
 		# A mismatch means the pair belongs to someone else: storing it would
 		# quietly answer one person's questions with another's permissions.
-		frappe.db.set_value("ERPERA Site Credential",
+		frappe.db.set_value("TTAC Site Credential",
 		                    {"parent": site_name, "user": user}, "disabled", 1,
 		                    update_modified=False)
 		frappe.db.commit()
@@ -466,7 +466,7 @@ def erp_state(site=None, token=None):
 		"status": row.get("erp_status") or "Not connected",
 		"last_checked": row.get("erp_last_probe"),
 		"error": row.get("erp_probe_error"),
-		"users_registered": frappe.db.count("ERPERA Site Credential", {
+		"users_registered": frappe.db.count("TTAC Site Credential", {
 			"parent": site_name, "parenttype": "Managed Site", "disabled": 0}) ,
 	}
 

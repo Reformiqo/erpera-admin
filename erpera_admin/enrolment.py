@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Sites enrolling themselves.
@@ -32,7 +32,7 @@ class EnrolmentRefused(frappe.ValidationError):
 
 
 def _settings():
-	return frappe.get_cached_doc("ERPERA AI Settings")
+	return frappe.get_cached_doc("TTAC AI Settings")
 
 
 def _mode():

@@ -1,0 +1,376 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_model",
+  "active_provider",
+  "active_model",
+  "column_break_m",
+  "fallback_provider",
+  "fallback_model",
+  "section_dist",
+  "allow_site_override",
+  "relay_enabled",
+  "share_keys",
+  "config_html",
+  "section_log",
+  "log_calls",
+  "log_content",
+  "content_retention_days",
+  "section_ingest",
+  "ingest_enabled",
+  "keep_records_days",
+  "section_selfserve",
+  "portal_signup_enabled",
+  "trial_days",
+  "column_break_ss",
+  "max_sites_per_account",
+  "default_seats",
+  "section_credits",
+  "credits_enabled",
+  "credit_multiplier",
+  "credit_validity_months",
+  "column_break_credits",
+  "credit_markup_percent",
+  "usd_inr_rate",
+  "credit_tax_percent",
+  "low_credit_threshold",
+  "section_credit_slabs",
+  "credit_slabs",
+  "section_enrolment",
+  "enrolment_mode",
+  "enrol_key",
+  "column_break_enrol",
+  "trial_credits",
+  "enrol_rate_limit",
+  "section_invoicing",
+  "invoicing_enabled",
+  "invoice_company",
+  "column_break_inv",
+  "invoice_item",
+  "invoice_naming_series",
+  "invoice_submit"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_model",
+   "fieldtype": "Section Break",
+   "label": "Model every site uses"
+  },
+  {
+   "description": "Groq, Anthropic, or whichever credential you want every site to answer with.",
+   "fieldname": "active_provider",
+   "fieldtype": "Link",
+   "label": "Provider",
+   "options": "AI Provider Credential"
+  },
+  {
+   "description": "Blank falls back to the credential's own default model.",
+   "fieldname": "active_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "column_break_m",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Answers when the first one is rate limited or down.",
+   "fieldname": "fallback_provider",
+   "fieldtype": "Link",
+   "label": "Fallback Provider",
+   "options": "AI Provider Credential"
+  },
+  {
+   "fieldname": "fallback_model",
+   "fieldtype": "Data",
+   "label": "Fallback Model"
+  },
+  {
+   "fieldname": "section_dist",
+   "fieldtype": "Section Break",
+   "label": "Distribution"
+  },
+  {
+   "default": "0",
+   "description": "Off means the choice here wins everywhere, which is the point of setting it here.",
+   "fieldname": "allow_site_override",
+   "fieldtype": "Check",
+   "label": "Let a site override the model"
+  },
+  {
+   "default": "0",
+   "description": "Off means each site keeps its own key and only the provider and model come from here. Turn on only for sites you operate.",
+   "fieldname": "share_keys",
+   "fieldtype": "Check",
+   "label": "Send the API key to sites"
+  },
+  {
+   "fieldname": "config_html",
+   "fieldtype": "HTML",
+   "label": "Current"
+  },
+  {
+   "fieldname": "section_log",
+   "fieldtype": "Section Break",
+   "label": "What sites should record"
+  },
+  {
+   "default": "1",
+   "fieldname": "log_calls",
+   "fieldtype": "Check",
+   "label": "Record every call"
+  },
+  {
+   "default": "0",
+   "description": "Prompts and responses are the client's own business data. Off by default.",
+   "fieldname": "log_content",
+   "fieldtype": "Check",
+   "label": "Record prompts and responses"
+  },
+  {
+   "default": "30",
+   "fieldname": "content_retention_days",
+   "fieldtype": "Int",
+   "label": "Delete content after (days)"
+  },
+  {
+   "fieldname": "section_ingest",
+   "fieldtype": "Section Break",
+   "label": "Here"
+  },
+  {
+   "default": "1",
+   "fieldname": "ingest_enabled",
+   "fieldtype": "Check",
+   "label": "Accept call batches"
+  },
+  {
+   "default": "0",
+   "description": "0 keeps them forever. Tokens and cost are what billing runs on.",
+   "fieldname": "keep_records_days",
+   "fieldtype": "Int",
+   "label": "Keep call records for (days)"
+  },
+  {
+   "fieldname": "section_selfserve",
+   "fieldtype": "Section Break",
+   "label": "Self-serve sign-up"
+  },
+  {
+   "default": "1",
+   "description": "Turns the /account portal on. With this off, keys can only be issued here by hand.",
+   "fieldname": "portal_signup_enabled",
+   "fieldtype": "Check",
+   "label": "Let customers sign up themselves"
+  },
+  {
+   "default": "15",
+   "fieldname": "trial_days",
+   "fieldtype": "Int",
+   "label": "Trial length (days)"
+  },
+  {
+   "fieldname": "column_break_ss",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "3",
+   "description": "A cap, so one sign-up cannot mint trial keys in a loop.",
+   "fieldname": "max_sites_per_account",
+   "fieldtype": "Int",
+   "label": "Sites one account may register"
+  },
+  {
+   "default": "5",
+   "fieldname": "default_seats",
+   "fieldtype": "Int",
+   "label": "Seats a trial starts with"
+  },
+  {
+   "fieldname": "section_credits",
+   "fieldtype": "Section Break",
+   "label": "Credits"
+  },
+  {
+   "default": "0",
+   "description": "Off means the account page keeps showing seats and hides the calculator.",
+   "fieldname": "credits_enabled",
+   "fieldtype": "Check",
+   "label": "Sell Credits"
+  },
+  {
+   "default": "1000",
+   "description": "The calculator rounds a purchase to this. 1000 matches how the slabs read.",
+   "fieldname": "credit_multiplier",
+   "fieldtype": "Int",
+   "label": "Buy In Multiples Of"
+  },
+  {
+   "default": "12",
+   "description": "How long a purchase lasts. Every new purchase extends the whole balance.",
+   "fieldname": "credit_validity_months",
+   "fieldtype": "Int",
+   "label": "Validity (Months)"
+  },
+  {
+   "fieldname": "column_break_credits",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "18",
+   "description": "Shown on the calculator. The invoice itself is worked out by india_compliance.",
+   "fieldname": "credit_tax_percent",
+   "fieldtype": "Percent",
+   "label": "Tax Percent"
+  },
+  {
+   "default": "500",
+   "description": "The site starts warning below this. Zero still answers until the balance runs out.",
+   "fieldname": "low_credit_threshold",
+   "fieldtype": "Float",
+   "label": "Low Balance Warning At",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_credit_slabs",
+   "fieldtype": "Section Break",
+   "label": "Credit Pricing"
+  },
+  {
+   "description": "Cheaper the more they buy. Rows are read in order; the last row with 0 covers the rest.",
+   "fieldname": "credit_slabs",
+   "fieldtype": "Table",
+   "label": "Credit Slabs",
+   "options": "AI Credit Slab"
+  },
+  {
+   "default": "50",
+   "description": "Margin on provider cost. Used when no bands are set below.",
+   "fieldname": "credit_markup_percent",
+   "fieldtype": "Percent",
+   "label": "Markup %"
+  },
+  {
+   "default": "90",
+   "description": "Rates are stored in INR. This only converts a row still marked USD, so a provider's dollar price sheet can be typed in without doing the sums by hand.",
+   "fieldname": "usd_inr_rate",
+   "fieldtype": "Float",
+   "label": "USD to INR (entry helper)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "section_enrolment",
+   "fieldtype": "Section Break",
+   "label": "Self Enrolment"
+  },
+  {
+   "default": "Key",
+   "description": "Off: keys are issued by hand. Key: the site must present the shared code below. Approval: the site enrols but arrives disabled until you enable it. Open: anyone who installs the app is enrolled.",
+   "fieldname": "enrolment_mode",
+   "fieldtype": "Select",
+   "label": "Enrolment Mode",
+   "options": "Off\nKey\nApproval\nOpen"
+  },
+  {
+   "description": "One short code you give customers. Beats making them log into a portal to copy a 43 character key.",
+   "fieldname": "enrol_key",
+   "fieldtype": "Password",
+   "label": "Enrolment Code"
+  },
+  {
+   "fieldname": "column_break_enrol",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Granted on enrolment. Zero means a new site must buy before it can ask anything, which is what makes open enrolment safe to leave on.",
+   "fieldname": "trial_credits",
+   "fieldtype": "Float",
+   "label": "Trial Credits",
+   "precision": "2"
+  },
+  {
+   "default": "20",
+   "description": "Per source address. A cheap brake on someone scripting sign-ups.",
+   "fieldname": "enrol_rate_limit",
+   "fieldtype": "Int",
+   "label": "Enrolments Per Hour"
+  },
+  {
+   "fieldname": "section_invoicing",
+   "fieldtype": "Section Break",
+   "label": "Invoicing"
+  },
+  {
+   "default": "0",
+   "description": "Off means a payment still credits the wallet but no Sales Invoice is raised.",
+   "fieldname": "invoicing_enabled",
+   "fieldtype": "Check",
+   "label": "Issue Invoices"
+  },
+  {
+   "description": "The seller. Its GSTIN decides which side of the state line every invoice falls on.",
+   "fieldname": "invoice_company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_inv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The service line. Created on first use with SAC 997331 if left blank.",
+   "fieldname": "invoice_item",
+   "fieldtype": "Link",
+   "label": "Credit Item",
+   "options": "Item"
+  },
+  {
+   "default": "1",
+   "description": "Off leaves each invoice as a draft for someone to check before it goes out.",
+   "fieldname": "invoice_submit",
+   "fieldtype": "Check",
+   "label": "Submit Automatically"
+  },
+  {
+   "default": "SINV-.YY.-",
+   "description": "GST caps an invoice number at 16 characters, so the default ACC-SINV-.YYYY.- series is too long to use.",
+   "fieldname": "invoice_naming_series",
+   "fieldtype": "Data",
+   "label": "Invoice Naming Series"
+  },
+  {
+   "default": "1",
+   "description": "Sites send us the conversation and we call the model. Their site never holds a provider, a model name or a key. Switch this off and each site calls a provider itself with its own key.",
+   "fieldname": "relay_enabled",
+   "fieldtype": "Check",
+   "label": "Answer On Behalf Of Sites"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TTAC Admin",
+ "name": "TTAC AI Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

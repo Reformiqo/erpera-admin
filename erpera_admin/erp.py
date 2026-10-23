@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Reaching into a customer's ERPNext site from here.
@@ -356,7 +356,7 @@ def _credential(site, user=None):
 	be traced to the permissions that produced it.
 	"""
 	rows = frappe.get_all(
-		"ERPERA Site Credential",
+		"TTAC Site Credential",
 		filters={"parent": site, "parenttype": "Managed Site"},
 		fields=["name", "user", "api_key", "disabled"],
 		order_by="idx asc",
@@ -369,14 +369,14 @@ def _credential(site, user=None):
 	if not chosen or not chosen.api_key:
 		raise ErpNotConnected(_("This site has not connected its ERPNext credentials yet."))
 	secret = frappe.utils.password.get_decrypted_password(
-		"ERPERA Site Credential", chosen.name, "api_secret", raise_exception=False)
+		"TTAC Site Credential", chosen.name, "api_secret", raise_exception=False)
 	if not secret:
 		raise ErpNotConnected(_("This site's stored key is incomplete. Reconnect it in AI Assist setup."))
 	return chosen.api_key, secret, (chosen.user or None)
 
 
 def has_user_key(site, user):
-	return bool(frappe.db.exists("ERPERA Site Credential",
+	return bool(frappe.db.exists("TTAC Site Credential",
 	                             {"parent": site, "parenttype": "Managed Site",
 	                              "user": user, "disabled": 0}))
 

@@ -1,8 +1,8 @@
 app_name = "erpera_admin"
-app_title = "ERPERA Admin"
-app_publisher = "Reformiqo"
+app_title = "TTAC Admin"
+app_publisher = "The Tiny App Company"
 app_description = "Central control plane for ERPERA AI: model selection and call metering across sites"
-app_email = "hello@reformiqo.com"
+app_email = "hello@thetinyappcompany.com"
 app_license = "mit"
 
 # Apps
@@ -15,7 +15,7 @@ add_to_apps_screen = [
 	{
 		"name": "erpera_admin",
 		"logo": "/assets/erpera_admin/logo.svg",
-		"title": "ERPERA Admin",
+		"title": "TTAC Admin",
 		"route": "/app/erpera-admin",
 		"has_permission": "erpera_admin.permissions.has_app_permission",
 	}

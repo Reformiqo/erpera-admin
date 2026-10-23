@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 import frappe
@@ -13,7 +13,7 @@ def purge_old_records():
 	a window usually wants the prompts gone, so content goes first and the row
 	only disappears once the window itself is exceeded.
 	"""
-	days = cint(frappe.db.get_single_value("ERPERA AI Settings", "keep_records_days"))
+	days = cint(frappe.db.get_single_value("TTAC AI Settings", "keep_records_days"))
 	if days <= 0:
 		return 0
 	cutoff = add_days(nowdate(), -days)

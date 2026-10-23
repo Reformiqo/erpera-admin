@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Prepaid credits for AI Assist, priced at cost plus a markup.
@@ -39,7 +39,7 @@ class OutOfCredits(frappe.ValidationError):
 
 def pricing():
 	"""What the calculator needs to draw itself."""
-	s = frappe.get_cached_doc("ERPERA AI Settings")
+	s = frappe.get_cached_doc("TTAC AI Settings")
 	bands = [
 		{"upto": cint(r.upto_credits), "markup": flt(r.markup_percent)}
 		for r in (s.get("credit_slabs") or [])
@@ -178,7 +178,7 @@ def estimate_calls(credits, model=None):
 	Presented to the customer as an estimate and nothing firmer, because the
 	answer genuinely depends on how long their questions are.
 	"""
-	s = frappe.get_cached_doc("ERPERA AI Settings")
+	s = frappe.get_cached_doc("TTAC AI Settings")
 	model = model or s.get("active_model")
 	if not model:
 		return None
@@ -315,7 +315,7 @@ def check(site):
 	# feature on at all; the per-site one says this particular customer has
 	# moved onto credits. Without the second, switching the feature on would
 	# gate every existing customer at a zero balance at the same moment.
-	if not cint(frappe.db.get_single_value("ERPERA AI Settings", "credits_enabled")):
+	if not cint(frappe.db.get_single_value("TTAC AI Settings", "credits_enabled")):
 		return {"ok": True, "reason": "credits_off"}
 	if not cint(frappe.db.get_value("Managed Site", site, "on_credits")):
 		return {"ok": True, "reason": "not_on_credits"}
@@ -332,7 +332,7 @@ def check(site):
 		                     "Buy more to carry on."),
 		        "credits": 0}
 
-	low = flt(frappe.db.get_single_value("ERPERA AI Settings", "low_credit_threshold"))
+	low = flt(frappe.db.get_single_value("TTAC AI Settings", "low_credit_threshold"))
 	return {"ok": True, "reason": "ok", "credits": b["credits"],
 	        "valid_upto": b["valid_upto"], "low": bool(low and b["credits"] < low)}
 

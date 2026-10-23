@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Everything the control page shows, in one round trip.
@@ -76,12 +76,12 @@ def summary(from_date=None, to_date=None):
 		limit_page_length=50,
 	)
 
-	from erpera_admin.erpera_admin.doctype.erpera_ai_settings.erpera_ai_settings import resolved_config
+	from erpera_admin.ttac_admin.doctype.ttac_ai_settings.ttac_ai_settings import resolved_config
 
 	# The raw stored choices, so the form controls can be filled from this same
 	# payload. resolved_config() reports what a site receives, which is not the
 	# same thing: it resolves a blank model to the credential's default.
-	st = frappe.get_cached_doc("ERPERA AI Settings")
+	st = frappe.get_cached_doc("TTAC AI Settings")
 	settings = {
 		"active_provider": st.active_provider or "",
 		"active_model": st.active_model or "",
@@ -111,7 +111,7 @@ def summary(from_date=None, to_date=None):
 def set_model(provider=None, model=None, fallback_provider=None, fallback_model=None):
 	"""Change what every site answers with, from the control page."""
 	_guard()
-	s = frappe.get_doc("ERPERA AI Settings")
+	s = frappe.get_doc("TTAC AI Settings")
 	s.active_provider = provider or None
 	s.active_model = model or None
 	s.fallback_provider = fallback_provider or None
@@ -119,6 +119,6 @@ def set_model(provider=None, model=None, fallback_provider=None, fallback_model=
 	s.save()
 	frappe.db.commit()
 
-	from erpera_admin.erpera_admin.doctype.erpera_ai_settings.erpera_ai_settings import resolved_config
+	from erpera_admin.ttac_admin.doctype.ttac_ai_settings.ttac_ai_settings import resolved_config
 
 	return resolved_config()

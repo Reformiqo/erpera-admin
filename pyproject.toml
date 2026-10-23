@@ -1,7 +1,7 @@
 [project]
 name = "erpera_admin"
 authors = [
-    { name = "Reformiqo", email = "hello@reformiqo.com"}
+    { name = "The Tiny App Company", email = "hello@thetinyappcompany.com"}
 ]
 description = "Central control plane for ERPERA AI: model selection and call metering across sites"
 requires-python = ">=3.11"

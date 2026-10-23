@@ -4,8 +4,8 @@ Two sites, two apps, one direction of trust.
 
 | | app | repo | what it is |
 |---|---|---|---|
-| Control site | `erpera_admin` | `Reformiqo/erpera-admin`, branch `version-16` | the brain: prompts, tool list, query registry, model keys |
-| Customer site | `ai_assist` | `Reformiqo/erpera-ai-assist`, branch `version-16` | plumbing only: who we are, where to ask, what it cost |
+| Control site | `erpera_admin` | `The Tiny App Company/erpera-admin`, branch `version-16` | the brain: prompts, tool list, query registry, model keys |
+| Customer site | `ai_assist` | `The Tiny App Company/erpera-ai-assist`, branch `version-16` | plumbing only: who we are, where to ask, what it cost |
 
 The customer site never calls a model. It asks the control site a question and
 the control site reads the customer's data back over REST with a key the
@@ -61,7 +61,7 @@ Install `erpera_admin`, then:
 - API Key: the real key
 - Default Model, Enabled: on
 
-**ERPERA AI Settings**
+**TTAC AI Settings**
 - Provider, Model: the credential above. Set the Fallback pair too if you have a second key.
 - **Answer On Behalf Of Sites: on.** This is the master switch. Off, and every
   customer question comes back `503 relay disabled`.

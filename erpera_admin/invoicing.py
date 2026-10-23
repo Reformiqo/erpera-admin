@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Reformiqo and contributors
+# Copyright (c) 2026, The Tiny App Company and contributors
 # For license information, please see license.txt
 
 """Raising the GST invoice for a credit purchase.
@@ -36,7 +36,7 @@ ITEM_CODE = "AI-ASSIST-CREDITS"
 
 
 def _settings():
-	return frappe.get_cached_doc("ERPERA AI Settings")
+	return frappe.get_cached_doc("TTAC AI Settings")
 
 
 def enabled():
@@ -46,7 +46,7 @@ def enabled():
 def _company():
 	name = _settings().get("invoice_company")
 	if not name:
-		frappe.throw(_("No invoicing company is set in ERPERA AI Settings."))
+		frappe.throw(_("No invoicing company is set in TTAC AI Settings."))
 	return name
 
 
