@@ -21,24 +21,29 @@ allowed to read the customer site.
 
 1. `ai_assist_control_url` in the site's own config
 2. `control_url` on AI Assist Settings (a hidden field, so normally unused)
-3. the shipped default, `https://control.erpera.io`
+3. the shipped default, `https://control.nbg.frappe.cloud`
 
-**Do this once and you never configure a customer site again:** in Frappe Cloud,
-open the control site, Domains, add `control.erpera.io` as a custom domain and
-point the DNS CNAME at it. Every `ai_assist` install then finds the brain with
-no configuration at all, which is what the module is built for. A customer
-installs an app; they should not also have to know the address of the machine
-that licenses it.
+**The shipped default is the live control site, so a customer site needs no
+configuration at all.** Install the app and it finds the brain. That is what
+the module is built for: a customer installs an app, and should not also have
+to know the address of the machine that licenses it.
 
-**Per site instead, if you are not ready to move the domain:** Frappe Cloud
-dashboard, the customer site, Site Config, add
+Set the site config key only when one site has to go somewhere else, a staging
+brain for instance:
 
 ```
-ai_assist_control_url = https://<your-control-site>.frappe.cloud
+ai_assist_control_url = https://<some-other-control-site>
 ```
 
-Site config always wins over everything else, so this is also the override to
-reach for when one customer has to be pointed somewhere else.
+Site config wins over everything else, so this is also how you move an already
+connected customer without waiting for a release.
+
+**Moving the brain to a custom domain later** is two steps and no migration: add
+the domain on the control site in Frappe Cloud and point the DNS CNAME at it,
+then change `DEFAULT_URL` in `ai_assist/ai/control.py` and release. Sites that
+have not taken the release yet keep working on the `.frappe.cloud` name as long
+as it still resolves, and any site that needs to move sooner takes the site
+config key.
 
 Two things not to do. Do not use `http://`: the site token travels on every
 call. Do not use an internal bench address or IP for either side: the control
