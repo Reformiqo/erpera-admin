@@ -74,7 +74,7 @@ READ_TOOLS = [
 				"properties": {
 					"doctype": {"type": "string"},
 					"fields": {"type": "array", "items": {"type": "string"}},
-					"filters": {"description": "Frappe filters, e.g. [[\"status\",\"=\",\"Overdue\"]]"},
+					"filters": {"description": "Frappe filters, e.g. [[\"status\",\"=\",\"Overdue\"]]. For a relative period use Timespan: [[\"creation\",\"Timespan\",\"this month\"]]. For a range use Between: [[\"posting_date\",\"Between\",[\"2026-04-01\",\"2026-06-30\"]]]."},
 					"order_by": {"type": "string"},
 					"limit": {"type": "number"},
 				},
@@ -187,7 +187,7 @@ NAV_TOOLS = [
 					"report": {"type": "string", "description": "Report name (query-report view)"},
 					"filters": {
 						"type": "object",
-						"description": 'List filters, e.g. {"outstanding_amount": [">", 0], "status": "Overdue"}',
+						"description": 'List filters, e.g. {"outstanding_amount": [">", 0], "status": "Overdue"}. For a relative period use Timespan: {"creation": ["Timespan", "this month"]}, never a bare <= on today. For a range use Between: {"posting_date": ["Between", ["2026-04-01", "2026-06-30"]]}.',
 					},
 				},
 				"required": ["view"],

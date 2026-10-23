@@ -55,6 +55,19 @@ def site_context(site):
 	return out
 
 
+# Relative periods are the commonest thing a person says and the easiest thing
+# for a model to get wrong. Asked for "customers this month" it will reach for
+# ["<=", "<today>"], which is every customer ever created, and the answer looks
+# plausible because the list is not empty. Frappe has a Timespan operator for
+# exactly this, so both prompts name it and both filter schemas show it.
+DATES = """DATES AND PERIODS
+- For any relative period use the Timespan operator rather than a hand-built date bound: {"creation": ["Timespan", "this month"]}. Valid values: today, yesterday, tomorrow, this week, this month, this quarter, this year, last week, last month, last quarter, last year, last 7 days, last 14 days, last 30 days, last 90 days, last 6 months, next week, next month, next 7 days, next 14 days, next 30 days.
+- A single bound like ["<=", "<date>"] means everything up to that date, which is never what "this month" or "this week" means. Use it only when the user actually says "up to", "before" or "since".
+- For an explicit range use Between: {"posting_date": ["Between", ["2026-04-01", "2026-06-30"]]}.
+- Pick the right field: transactions use posting_date or transaction_date, master records (Customer, Supplier, Item, Lead) use creation.
+- Say which period you applied, so a wrong reading is visible instead of silent."""
+
+
 def cowork_prompt(ctx):
 	company = ctx.get("company") or ""
 	currency = ctx.get("currency") or "INR"
@@ -82,6 +95,8 @@ STYLE
 - After a draft: summarize name, key fields, total, and end with the markdown link [View in Desk](<link>).
 - If a create fails, translate the error into a plain question ("ERPNext needs a Bill No. What is it?"), don't dump tracebacks.
 
+{DATES}
+
 CONTEXT: Today {nowdate()} · Company: {company or "(site default)"} · Currency: {currency or "INR"} · User: {user}"""
 
 
@@ -97,6 +112,8 @@ RULES
 - Never use an em dash. Write two sentences, or use a comma or a colon.
 - When helpful, end with a desk link like [Open list](/app/sales-invoice).
 - Keep responses concise.
+
+{DATES}
 
 CONTEXT: Today {nowdate()} · Company: {company or "(site default)"} · User: {user}"""
 
