@@ -6,3 +6,4 @@ erpera_admin.patches.v1_0.drop_enrolment_code
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+erpera_admin.patches.v1_0.heal_stale_module_links

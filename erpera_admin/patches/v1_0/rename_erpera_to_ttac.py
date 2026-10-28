@@ -26,6 +26,12 @@ DOCTYPES = (
 
 def execute():
 	_rename_module()
+	# Unconditionally, and not only on the path where the old Module Def was
+	# still there to rename. A row left pointing at a module that no longer
+	# exists is not cosmetic: frappe throws on it while building the desk
+	# sidebar, inside the session boot, so every user of the site gets a 500 on
+	# /app. Cheap to run, finds nothing on a healthy site.
+	_repoint_module()
 	for old, new in DOCTYPES:
 		_rename_doctype(old, new)
 	# A Single keeps its values in tabSingles keyed by doctype name, and
@@ -64,9 +70,9 @@ def _rename_module():
 		frappe.db.sql(
 			"update `tabModule Def` set name = %s, module_name = %s where name = %s",
 			(MODULE_NEW, MODULE_NEW, MODULE_OLD))
-	_repoint_module()
-	# Only reachable if both existed, from a half-finished earlier run.
-	frappe.delete_doc("Module Def", MODULE_OLD, force=True, ignore_missing=True)
+	else:
+		# Both existed, from a half-finished earlier run.
+		frappe.delete_doc("Module Def", MODULE_OLD, force=True, ignore_missing=True)
 
 
 def _repoint_module():
@@ -87,7 +93,10 @@ def _repoint_module():
 		if (dt, fn) in seen:
 			continue
 		seen.add((dt, fn))
-		if not frappe.db.table_exists(f"tab{dt}"):
+		# table_exists takes the doctype, not the table: passed "tabWorkspace"
+		# it looks for "tabtabWorkspace", answers no, and the sweep skips every
+		# table in silence. Which is exactly what it did.
+		if not frappe.db.table_exists(dt):
 			continue
 		try:
 			if not frappe.db.has_column(dt, fn):
