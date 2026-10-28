@@ -485,6 +485,30 @@ def agents(site=None, token=None):
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+def mcp_tools(site=None, token=None):
+	"""The tools and prompts this site may expose through its MCP connector.
+
+	Mostly the same list, and exactly the same wording, the agent reads: a person
+	asking through Claude is asking the same questions as one asking through the
+	widget. A few tools exist only here, because a client in somebody else's
+	product has no system prompt of ours telling it which company it is looking
+	at or when this customer's financial year starts.
+
+	Served rather than shipped for the usual reason: the connector runs on a site
+	where the customer is Administrator, so this is the only place the question of
+	what it may do can actually be settled.
+	"""
+	from erpera_admin.brain import tools as brain_tools
+
+	_authenticate(site, token)
+	return {
+		"ok": True,
+		"tools": brain_tools.mcp_catalogue(),
+		"prompts": brain_tools.mcp_prompts(),
+	}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
 def ask(site=None, token=None, message=None, history=None, mode="desk",
         context=None, allow_instant=0, **_ignored):
 	"""One whole conversational turn, reasoned here and read from there.

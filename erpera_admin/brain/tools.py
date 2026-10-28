@@ -510,3 +510,289 @@ def execute_tool(site, name, args, ctx):
 	except Exception as e:
 		frappe.log_error(title=f"Brain tool {name} failed", message=frappe.get_traceback())
 		return _err(str(e) or "that did not work")
+
+
+# ─── The same tools, in MCP's dialect ─────────────────────────────────────────
+
+# `navigate` exists to steer a Desk we are rendering next to. An MCP client has
+# no Desk to steer and no widget of ours to receive an action, so the capability
+# comes back as the only form that survives the channel: a link to hand over.
+OPEN_TOOL = {
+	"type": "function",
+	"function": {
+		"name": "open_in_erpnext",
+		"description": (
+			"Build a link into the user's own ERPNext: a filtered list, one document, "
+			"or a report. Use it whenever an answer is easier to trust with the records "
+			"in front of them, and show the URL you get back. It returns a link; it "
+			"does not open anything by itself."
+		),
+		"parameters": {
+			"type": "object",
+			"properties": {
+				"view": {"type": "string", "enum": ["list", "form", "new", "report", "query-report", "print"]},
+				"doctype": {"type": "string", "description": "DocType for list/form/new/print"},
+				"name": {"type": "string", "description": "Document name (form and print views)"},
+				"report": {"type": "string", "description": "Report name (query-report view)"},
+				"print_format": {"type": "string", "description": "Optional print format name for the print view"},
+				"filters": {
+					"type": "object",
+					"description": 'List filters, e.g. {"outstanding_amount": [">", 0], "status": "Overdue"}. For a relative period use Timespan: {"creation": ["Timespan", "this month"]}, never a bare <= on today. For a range use Between: {"posting_date": ["Between", ["2026-04-01", "2026-06-30"]]}.',
+				},
+			},
+			"required": ["view"],
+		},
+	},
+}
+
+
+def _as_mcp(fn, read_only):
+	"""One tool, re-dressed for a client that reads JSON Schema under inputSchema.
+
+	The description is copied, not rewritten. A customer who reaches their site
+	through Claude is asking the same questions as one who reaches it through the
+	widget, and the wording that stops a model adding up a truncated list is the
+	same wording either way.
+
+	The hints are not decoration: a client shows a read-only tool differently
+	from one that writes, and can run one without asking. Nothing here deletes
+	or submits, so `destructiveHint` is false on the writes too, and a draft
+	created twice is two drafts, so none of them is idempotent.
+	"""
+	return {
+		"name": fn["name"],
+		"description": fn["description"],
+		"inputSchema": fn.get("parameters") or {"type": "object", "properties": {}},
+		"annotations": {
+			"title": fn["name"].replace("_", " ").title(),
+			"readOnlyHint": bool(read_only),
+			"destructiveHint": False,
+			"idempotentHint": False,
+			"openWorldHint": True,
+		},
+	}
+
+
+
+
+# Tools the connector has and the agent does not. Not an oversight: the agent is
+# handed its company, its user and today's date in a system prompt we write, and
+# it answers inside a Desk that already knows what this site contains. A client
+# in somebody else's product knows none of that, and the two mistakes it makes
+# without being told are guessing a company name on a multi-company site and
+# reading "last quarter" as a calendar quarter on a site whose year starts in
+# April. Each of these closes one of those.
+MCP_ONLY_TOOLS = [
+	{
+		"type": "function",
+		"function": {
+			"name": "get_context",
+			"description": (
+				"Who you are talking to and what this site contains: the user, their "
+				"timezone, today's date, the default company and every company they can "
+				"see, the open fiscal year, the currency and how it is written. CALL THIS "
+				"FIRST, before any other tool, and use the company and dates it gives you "
+				"instead of guessing. Takes no arguments."
+			),
+			"parameters": {"type": "object", "properties": {}},
+		},
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "resolve_period",
+			"description": (
+				"Turn a period someone said out loud into the two dates this site means by "
+				"it: 'last month', 'this quarter', 'last 30 days', 'this fiscal year', "
+				"'last fiscal year', 'year to date'. Use it for any question with a period "
+				"in it and pass the dates it returns to your filters. A financial year here "
+				"usually runs April to March, so a fiscal period is NOT the calendar one "
+				"and working it out yourself will be wrong."
+			),
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"period": {"type": "string", "description": "e.g. last month, this quarter, last fiscal year, last 90 days, year to date"},
+					"company": {"type": "string", "description": "Optional; a fiscal period can differ by company."},
+				},
+				"required": ["period"],
+			},
+		},
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "list_doctypes",
+			"description": (
+				"Find out what kinds of document this site actually keeps, including the "
+				"ones added for this customer's own trade, which you cannot know from "
+				"ERPNext alone. Search by word or list a module. Use it before guessing a "
+				"DocType name, and before telling someone this site cannot do something."
+			),
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"search": {"type": "string", "description": "Word to look for in the name, e.g. 'invoice', 'waste', 'vehicle'"},
+					"module": {"type": "string", "description": "Optional module to list, e.g. Accounts, Stock"},
+					"limit": {"type": "number", "description": "Max rows (default 40)"},
+				},
+			},
+		},
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "list_reports",
+			"description": (
+				"The reports this site has and the filters each one wants, so run_report "
+				"can be called with the right name and arguments instead of a guess. "
+				"Search by word, e.g. 'receivable', 'stock', 'gst'."
+			),
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"search": {"type": "string", "description": "Word to look for in the report name"},
+					"doctype": {"type": "string", "description": "Optional: only reports on this DocType"},
+					"limit": {"type": "number", "description": "Max rows (default 30)"},
+				},
+			},
+		},
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "add_comment",
+			"description": (
+				"Leave a note on a document's timeline, where the next person to open it "
+				"will read it: what was agreed on the phone, why a price was changed, when "
+				"a customer promised to pay. It writes a comment and nothing else; no field "
+				"on the document is touched."
+			),
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"doctype": {"type": "string"},
+					"name": {"type": "string"},
+					"comment": {"type": "string"},
+				},
+				"required": ["doctype", "name", "comment"],
+			},
+		},
+	},
+]
+
+# Starting points a client shows as its own menu, so the first thing someone sees
+# is four jobs this does rather than an empty box and a connector they have to
+# invent questions for. `arguments` are filled in by whoever picks the prompt.
+MCP_PROMPTS = [
+	{
+		"name": "who_owes_me",
+		"title": "Who owes me money",
+		"description": "Outstanding receivables, oldest first, with the invoices behind the total.",
+		"arguments": [
+			{"name": "company", "description": "Leave empty for the default company.",
+			 "required": False, "default": "my default company"},
+		],
+		"template": (
+			"Call get_context first. Then tell me what my customers owe me at {company}: "
+			"the total outstanding, how much of it is overdue, and the ten biggest debtors "
+			"with their oldest unpaid invoice and how many days late it is. Use aggregate "
+			"for every total, never a row count. Finish with a link to the Accounts "
+			"Receivable report."
+		),
+	},
+	{
+		"name": "record_a_payment",
+		"title": "Record a payment received",
+		"description": "Drafts a Payment Entry against the right invoices. You submit it.",
+		"arguments": [
+			{"name": "details", "description": "e.g. received 1,00,000 from Sunrise Traders by cheque",
+			 "required": True, "default": ""},
+		],
+		"template": (
+			"Call get_context first. A payment came in: {details}. Find the party, check "
+			"what they owe, and draft the Payment Entry allocated against their oldest "
+			"outstanding invoices. Show me the allocation before you create it, then give "
+			"me the link to the draft. Do not say it is submitted; you cannot submit."
+		),
+	},
+	{
+		"name": "month_end_check",
+		"title": "Month-end check",
+		"description": "What is still draft, unpaid or odd before the books close.",
+		"arguments": [
+			{"name": "period", "description": "e.g. last month, this quarter, last fiscal year",
+			 "required": False, "default": "last month"},
+		],
+		"template": (
+			"Call get_context, then resolve_period for \"{period}\". For that period tell "
+			"me: how many Sales Invoices and Purchase Invoices are still draft, total sales "
+			"and total purchases submitted, what was outstanding receivable and payable at "
+			"the end of it, and anything that looks wrong enough to check by hand. Totals "
+			"from aggregate only. Link to every list you mention."
+		),
+	},
+	{
+		"name": "customer_history",
+		"title": "Everything about one customer",
+		"description": "Orders, invoices, payments and what is still open, on one page.",
+		"arguments": [
+			{"name": "customer", "description": "Customer name, or part of it",
+			 "required": True, "default": ""},
+		],
+		"template": (
+			"Call get_context first, then search_link to find the customer matching "
+			"\"{customer}\". Give me what they have bought this fiscal year, what they owe "
+			"now, their oldest unpaid invoice, their last payment, and any open Sales "
+			"Order. Link to their customer page at the end."
+		),
+	},
+	{
+		"name": "stock_position",
+		"title": "Stock position of an item",
+		"description": "What is on hand, where, and what is already committed.",
+		"arguments": [
+			{"name": "item", "description": "Item name or code, as a person would say it",
+			 "required": True, "default": ""},
+		],
+		"template": (
+			"Call get_context first, then search_link to resolve \"{item}\" to a real Item. "
+			"Tell me the quantity on hand per warehouse with its unit, the total, how much "
+			"is reserved against Sales Orders, and the reorder level if one is set. Link to "
+			"the Stock Balance report filtered to that item."
+		),
+	},
+]
+
+
+def mcp_prompts():
+	"""The prompt menu a connector offers.
+
+	Served from here, like the tools, because these are the product talking: each
+	one is a worked instruction for a job this does well, including the order to
+	call things in. A customer who picks one gets the good version of a question
+	they would otherwise ask badly.
+	"""
+	return [dict(p) for p in MCP_PROMPTS]
+
+
+
+def mcp_catalogue():
+	"""The tool list an MCP client is shown.
+
+	Served from here for the same reason the agents are: what the tools are, how
+	they are worded and which ones exist at all is the product, and a customer is
+	Administrator on the site the connector runs on. There is no submit tool in
+	this list, and more to the point there is no submit branch in the executor
+	that reads it, so the list is a description of the guarantee rather than the
+	thing enforcing it.
+	"""
+	writes = {"add_comment"}
+	out = [_as_mcp(t["function"], read_only=True)
+	       for t in MCP_ONLY_TOOLS if t["function"]["name"] not in writes]
+	out += [_as_mcp(t["function"], read_only=True) for t in READ_TOOLS]
+	out.append(_as_mcp(OPEN_TOOL["function"], read_only=True))
+	out += [_as_mcp(t["function"], read_only=False) for t in WRITE_TOOLS]
+	out += [_as_mcp(t["function"], read_only=False)
+	        for t in MCP_ONLY_TOOLS if t["function"]["name"] in writes]
+	return out
